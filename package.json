@@ -1,0 +1,50 @@
+{
+  "name": "@folder/readdir",
+  "version": "0.1.0",
+  "homepage": "https://github.com/@folder/readdir",
+  "repository": "@folder/folder",
+  "bugs": {
+    "url": "https://github.com/@folder/readdir/issues"
+  },
+  "license": "MIT",
+  "files": [
+    "index.js"
+  ],
+  "main": "index.js",
+  "engines": {
+    "node": ">= 0.10.0"
+  },
+  "dependencies": {
+    "@folder/file": "^1.1.0",
+    "@folder/file-extra-lite": "file:../file-extra-lite",
+    "@folder/vinyl-lite": "file:../vinyl-lite",
+    "ansi-colors": "^2.0.5",
+    "each-parallel-async": "^1.0.0",
+    "glob": "^7.1.2",
+    "is-negated-glob": "^1.0.0",
+    "ordered-read-streams": "^1.0.1",
+    "picomatch": "file:../../micromatch/picomatch-simple",
+    "pumpify": "^1.5.1",
+    "readable-stream": "^2.3.6",
+    "time-stamp": "^2.0.0",
+    "to-absolute-glob": "^2.0.2",
+    "unique-stream": "^2.2.1",
+    "vinyl-lite": "file:../vinyl-lite"
+  },
+  "devDependencies": {
+    "mocha": "^3.5.3"
+  },
+  "keywords": [
+    "folder",
+    "readdir"
+  ],
+  "lintDeps": {
+    "dependencies": {
+      "files": {
+        "patterns": [
+          "*.js"
+        ]
+      }
+    }
+  }
+}
