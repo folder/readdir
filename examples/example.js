@@ -7,7 +7,7 @@ const util = require('util');
 const pico = require('picomatch');
 const glob = util.promisify(require('glob'));
 const ignore = require('parse-gitignore')(fs.readFileSync('.gitignore'));
-const timer = require('../timer');
+const timer = require('../bench/timer');
 const readdir = require('../');
 
 /**
@@ -15,16 +15,14 @@ const readdir = require('../');
  */
 
 const ignored = ['node_modules', 'test', 'temp', 'vendor', 'tmp', '.DS_Store', '.git'];
-const isIgnored = pico.matcher(ignore);
-const isMatch = pico.matcher('**/*.js');
+const isIgnored = pico(ignore);
+const isMatch = pico('**/*.txt');
 const options = {
   filter(file) {
-    if (file.stat.isDirectory()) {
-      let relative = path.relative(file.base, file.path);
-      file.recurse = !isIgnored(relative);
-      return false;
+    if (file.isDirectory()) {
+      file.recurse = !isIgnored(file.basename);
     }
-    return isMatch(file.path);
+    file.keep = isMatch(file.path);
   }
 };
 
@@ -34,11 +32,11 @@ const options = {
 
 const time = timer('Total');
 const log = files => console.log(bold('\nFiles:'), green(files.length.toLocaleString()));
-const cwd = '../';
+const cwd = path.join(__dirname, '../..');
 
 readdir(cwd, { ...options })
 // glob('**/*.js', { ...options, cwd, ignore })
-  .then(files => console.log(files))
-  // .then(files => log(files))
+  // .then(files => console.log(files.length))
+  .then(files => log(files))
   .then(() => time())
   .catch(console.error);

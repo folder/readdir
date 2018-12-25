@@ -3,7 +3,7 @@
 const fs = require('fs');
 const util = require('util');
 const path = require('path');
-const noop = () => true;
+const File = require('./file');
 
 const readdir = (baseDir, options = {}, cb) => {
   if (typeof options === 'function') {
@@ -16,20 +16,32 @@ const readdir = (baseDir, options = {}, cb) => {
   }
 
   let files = [];
-  let push = file => files.push(options.path ? file.path : file);
+  let noop = () => true;
+  let toPath = file => (options.absolute || !file.relative) ? file.path : file.relative;
+  let push = file => {
+    if (file.keep !== false) {
+      files.push(options.path ? toPath(file) : file);
+    }
+  };
+
   let base = path.resolve(baseDir);
+  let onFile = options.onFile || noop;
   let onMatch = options.onMatch || noop;
-  let filter = options.filter || noop;
+  let onFolder = options.onFolder || noop;
+  let filter = options.filter || (() => options.filesOnly !== true);
 
-  const walk = (folder, next) => {
+  const walk = async (folder, parent, next) => {
+    folder.parent = folder.relative = parent;
+    folder.isDirectory = () => true;
     let isMatch = filter(folder) === true;
-    let recurse = folder.recurse !== false && options.recurse !== false;
-    let dirname = folder.path;
+    let dirname = folder.path = path.join(base, parent);
+    let recurse = await onMatch(folder);
 
-    onMatch(folder);
+    await onFolder(folder);
+    push(folder);
 
-    if (isMatch) {
-      push(file);
+    if (folder.recurse === false || options.recurse === false) {
+      recurse = false;
     }
 
     if (dirname !== base && recurse === false) {
@@ -63,7 +75,7 @@ const readdir = (baseDir, options = {}, cb) => {
           }
 
           if (stat.isDirectory()) {
-            walk(file, err => {
+            walk(file, path.join(parent, basename), err => {
               if (err) {
                 err.file = file;
                 next(err);
@@ -75,11 +87,12 @@ const readdir = (baseDir, options = {}, cb) => {
               }
             });
           } else {
+            file.parent = parent;
+            file.relative = path.join(parent, basename);
             file.isDirectory = () => false;
-            let isMatch = await onMatch(file);
-            if (isMatch) {
-              push(file);
-            }
+            await onMatch(file);
+            await onFile(file);
+            push(file);
 
             if (--len === 0) {
               next(null, files);
@@ -91,107 +104,40 @@ const readdir = (baseDir, options = {}, cb) => {
   }
 
   let file = new File(base, path.dirname(base), path.basename(base));
-  return walk(file, cb);
+  return walk(file, '', cb);
 }
 
-class File {
-  constructor(base, dirname, basename) {
-    this.history = [];
-    this.base = base;
-    this.path = path.join(dirname, basename);
-    Reflect.defineProperty(this, 'stat', { value: null, writable: true });
-  }
+// class File {
+//   constructor(base, dirname, basename) {
+//     this.base = base;
+//     this.dirname = dirname;
+//     this.basename = basename;
+//     this.path = path.join(dirname, basename);
+//   }
 
-  isDirectory() {
-    return this.stat ? this.stat.isDirectory() : false;
-  }
+//   get folder() {
+//     return this._parent ? this._parent.folder : this.basename;
+//   }
 
-  isAbsolute() {
-    return path.isAbsolute(this.path);
-  }
+//   get rest() {
+//     if (this._rest) return this._rest;
+//     return (this._rest = this.path.slice(this.base.length + 1));
+//   }
+//   get segs() {
+//     if (this._segs) return this._segs;
+//     return (this._segs = this.rest.split(path.sep));
+//   }
+//   get folder() {
+//     if (this._folder) return this._folder;
+//     return (this._folder = this.segs[0]);
+//   }
 
-  get absolute() {
-    return path.resolve(this.path);
-  }
-
-  get relative() {
-    return path.relative(this.base, this.path);
-  }
-
-  // set base(val) {
-  //   if (val === null || val === void 0) return;
-
-  //   let base = path.normalize(val);
-  //   if (base === this._base) return;
-
-  //   // ensure that file.relative is always correct
-  //   let filepath = this.history.length ? this.path : null;
-  //   let relative = filepath ? this.relative : null;
-
-  //   this._base = base;
-
-  //   if (relative && filepath.indexOf(base) !== 0) {
-  //     this.path = path.resolve(base, relative);
-  //   }
-  // }
-  // get base() {
-  //   return this._base;
-  // }
-
-  set path(filepath) {
-    if (filepath === '') return;
-    let val = path.normalize(filepath);
-    if (val !== this.path) {
-      this.history.push(val);
-    }
-  }
-  get path() {
-    return this.history[this.history.length - 1];
-  }
-
-  set dirname(dirname) {
-    this.path = path.join(dirname, this.basename);
-  }
-  get dirname() {
-    return path.dirname(this.path);
-  }
-
-  set folder(folder) {
-    this.path = path.join(path.dirname(this.dirname), folder, this.basename);
-  }
-  get folder() {
-    return path.basename(this.dirname);
-  }
-
-  set basename(basename) {
-    this.path = path.join(this.dirname, basename);
-  }
-  get basename() {
-    return path.basename(this.path);
-  }
-
-  set stem(stem) {
-    this.basename = stem + this.extname;
-  }
-  get stem() {
-    return path.basename(this.path, this.extname);
-  }
-
-  set extname(extname) {
-    this.basename = this.stem + extname;
-  }
-  get extname() {
-    return path.extname(this.path);
-  }
-}
-
-readdir.readdirs = (dirs, options) => {
-  const pending = [];
-  const files = [];
-  for (let dir of [].concat(dirs)) {
-    pending.push(readdir(dir, options).then(f => files.push(...f)));
-  }
-  return Promise.all(pending).then(() => files);
-};
+//   set relative(val) {
+//     this._relative = val;
+//   }
+//   get relative() {
+//     return this._relative || path.relative(this.base, this.path);
+//   }
+// }
 
 module.exports = readdir;

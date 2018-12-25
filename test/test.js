@@ -13,19 +13,21 @@ describe('readdir', function() {
       });
   });
 
-  it('should take a transform function as the second argument', async() => {
-    const files = await readdir(__dirname, file => {
+  it.only('should take a transform function as the second argument', async() => {
+    let files = await readdir(__dirname, file => {
       file.stem = 'foo';
+      file.recurse = true;
       return file;
-    });
+    })
+    .catch(console.log)
 
     assert(files.some(f => f.basename === 'foo.js'));
   });
 
   it('should take a transform function as the third argument', async() => {
-    const files = await readdir(__dirname, {}, file => {
+    let files = await readdir(__dirname, {}, file => {
       file.stem = 'foo';
-      console.log(file)
+      console.log(file);
       return file;
     });
 
