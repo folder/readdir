@@ -2,7 +2,8 @@
   "name": "@folder/readdir",
   "version": "0.1.0",
   "homepage": "https://github.com/@folder/readdir",
-  "repository": "@folder/folder",
+  "author": "Jon Schlinkert (https://github.com/jonschlinkert)",
+  "repository": "@folder/readdir",
   "bugs": {
     "url": "https://github.com/@folder/readdir/issues"
   },
@@ -15,22 +16,43 @@
     "node": ">=4"
   },
   "devDependencies": {
+    "gulp-format-md": "^2.0.0",
     "mocha": "^5.2.0",
     "rimraf": "^2.6.3",
     "write": "^1.0.3"
   },
   "keywords": [
+    "absolute",
+    "async",
+    "await",
+    "deep",
+    "dir",
+    "directories",
+    "directory",
+    "event",
+    "file system",
+    "file",
+    "files",
+    "filter",
+    "find",
     "folder",
-    "readdir"
+    "fs",
+    "promise",
+    "readdir",
+    "recurse",
+    "recursive"
   ],
-  "lintDeps": {
-    "dependencies": {
-      "files": {
-        "patterns": [
-          "*.js",
-          "!example.js"
-        ]
-      }
+  "verb": {
+    "toc": false,
+    "layout": "default",
+    "tasks": [
+      "readme"
+    ],
+    "plugins": [
+      "gulp-format-md"
+    ],
+    "lint": {
+      "reflinks": true
     }
   }
 }
