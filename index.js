@@ -14,6 +14,15 @@ const readdir = (dir, options, cb) => {
     return util.promisify(readdir)(dir, options);
   }
 
+  if (Array.isArray(dir)) {
+    return readdirs(dir, options, cb);
+  }
+
+  if (typeof dir !== 'string') {
+    cb(new TypeError('Expected dir to be a string'));
+    return;
+  }
+
   const opts = { ...options };
   const ignore = opts.ignore ? matcher(opts.ignore, opts) : () => false;
   const filter = opts.filter ? matcher(opts.filter, opts) : () => true;
@@ -156,7 +165,11 @@ const readdir = (dir, options, cb) => {
   });
 };
 
-readdir.sync = (dir, options) => {
+readdir.sync = (dir, options = {}) => {
+  if (Array.isArray(dir)) {
+    return readdirsSync(dir, options);
+  }
+
   if (typeof dir !== 'string') {
     throw new TypeError('Expected dir to be a string');
   }
@@ -276,6 +289,48 @@ readdir.sync = (dir, options) => {
 
   walk(file);
   return opts.unique ? [...results] : results;
+};
+
+const readdirs = (dirs, options, cb) => {
+  if (typeof options === 'function') {
+    return readdirs(dirs, null, options);
+  }
+
+  let opts = { ...options };
+  let files = opts.unique ? new Set() : [];
+  let onPush = opts.onPush;
+  let pending = [];
+
+  opts.onPush = file => {
+    files[opts.unique ? 'add' : 'push'](file.result);
+    onPush && onPush(file);
+  };
+
+  for (let dir of dirs) pending.push(readdir(dir, opts));
+
+  let promise = Promise.all(pending)
+    .then(() => opts.unique ? [...new Set(files)] : files);
+
+  if (typeof cb === 'function') {
+    promise.then(files => cb(null, files)).catch(cb);
+    return;
+  }
+
+  return promise;
+};
+
+const readdirsSync = (dirs, options) => {
+  let opts = { ...options };
+  let files = opts.unique ? new Set() : [];
+  let onPush = opts.onPush;
+
+  opts.onPush = file => {
+    files[opts.unique ? 'add' : 'push'](file.result);
+    onPush && onPush(file);
+  };
+
+  for (let dir of dirs) readdir.sync(dir, opts);
+  return opts.unique ? [...new Set(files)] : files;
 };
 
 const toFile = (file = {}, folder, options) => {

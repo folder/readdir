@@ -1,6 +1,8 @@
 # @folder/readdir [![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=W8YFZ425KND68) [![NPM version](https://img.shields.io/npm/v/@folder/readdir.svg?style=flat)](https://www.npmjs.com/package/@folder/readdir) [![NPM monthly downloads](https://img.shields.io/npm/dm/@folder/readdir.svg?style=flat)](https://npmjs.org/package/@folder/readdir) [![NPM total downloads](https://img.shields.io/npm/dt/@folder/readdir.svg?style=flat)](https://npmjs.org/package/@folder/readdir) [![Linux Build Status](https://img.shields.io/travis/@folder/folder.svg?style=flat&label=Travis)](https://travis-ci.org/@folder/folder)
 
-> Please consider following this project's author, [Jon Schlinkert](https://github.com/jonschlinkert), and consider starring the project to show your :heart: and support.
+> Recursively read a directory, blazing fast.
+
+Please consider following this project's author, [Jon Schlinkert](https://github.com/jonschlinkert), and consider starring the project to show your :heart: and support.
 
 ## Install
 

@@ -73,6 +73,18 @@ describe('readdir', () => {
           assert.equal(files[0], 'a');
         });
     });
+
+    it('should take and array of directories', () => {
+      cleanup = createFiles(['a/a/a', 'b/b/b']);
+
+      return readdir([fixtures('a'), fixtures('b')])
+        .then(files => {
+          cleanup();
+          assert.equal(files.length, 2);
+          assert.equal(files[0], 'a');
+          assert.equal(files[1], 'b');
+        });
+    });
   });
 
   describe('options.depth', () => {

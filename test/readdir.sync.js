@@ -90,6 +90,16 @@ describe('readdir', () => {
       assert.equal(files.length, 1);
       assert.equal(files[0], 'a');
     });
+
+    it('should take and array of directories', () => {
+      cleanup = createFiles(['a/a/a', 'b/b/b']);
+
+      let files = readdir.sync([fixtures('a'), fixtures('b')]);
+      cleanup();
+      assert.equal(files.length, 2);
+      assert.equal(files[0], 'a');
+      assert.equal(files[1], 'b');
+    });
   });
 
   describe('options.depth', () => {
