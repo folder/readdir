@@ -1,6 +1,7 @@
 {
   "name": "@folder/readdir",
-  "version": "0.1.0",
+  "description": "Recursively read a directory, blazing fast.",
+  "version": "1.0.0",
   "homepage": "https://github.com/@folder/readdir",
   "author": "Jon Schlinkert (https://github.com/jonschlinkert)",
   "repository": "@folder/readdir",
