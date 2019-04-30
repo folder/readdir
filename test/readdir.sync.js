@@ -47,7 +47,7 @@ const createSymlinks = (type, links, files) => {
   };
 };
 
-describe('readdir', () => {
+describe('readdir.sync', () => {
   beforeEach(() => deleteFixtures());
   beforeEach(() => rimraf.sync(path.join(__dirname, 'symlinks')));
   after(() => rimraf.sync(path.join(__dirname, 'symlinks')));
@@ -170,8 +170,8 @@ describe('readdir', () => {
   describe('options.objects', () => {
     it('should return file objects', () => {
       let files = readdir.sync(__dirname, { objects: true });
-      assert(files.some(file => file.basename === 'readdir.js'));
-      assert(files.some(file => file.basename === 'fixtures'));
+      assert(files.some(file => file.name === 'readdir.js'));
+      assert(files.some(file => file.name === 'fixtures'));
     });
   });
 
@@ -180,6 +180,7 @@ describe('readdir', () => {
       const onFile = file => {
         if (file.name === 'readdir.js') {
           file.path = path.join(path.dirname(file.path), 'foo.js');
+          file.name = 'foo.js';
         }
         return file;
       };
@@ -206,8 +207,9 @@ describe('readdir', () => {
   describe('options.onDirectory', () => {
     it('should call options.onDirectory function on each directory', () => {
       const onDirectory = file => {
-        if (file.basename === 'fixtures') {
+        if (file.name === 'fixtures') {
           file.path = path.join(path.dirname(file.path), 'actual');
+          file.name = 'actual';
         }
       };
 
@@ -221,7 +223,7 @@ describe('readdir', () => {
       cleanup = createFiles(paths);
 
       const onDirectory = file => {
-        file.recurse = file.basename !== 'b';
+        file.recurse = file.name !== 'b';
         file.keep = false;
       };
 
@@ -236,7 +238,7 @@ describe('readdir', () => {
       let link = 'temp-symlink.js';
       cleanup = createSymlink('file', link, ['foo.js', 'bar.js']);
 
-      let files = readdir.sync(fixtures(), { ...options, basename: true });
+      let files = readdir.sync(fixtures(), { ...options });
       assert(files.length > 0);
       assert(files.some(name => name === link));
       assert(files.some(name => name === 'foo.js'));
@@ -277,7 +279,7 @@ describe('readdir', () => {
         let link = 'temp-symlink.js';
         cleanup = createSymlink('file', link, ['foo.js', 'bar.js']);
 
-        let files = readdir.sync(fixtures(), { ...options, basename: true });
+        let files = readdir.sync(fixtures(), { ...options });
 
         assert(files.length > 0);
         assert(files.some(name => name === link));
@@ -293,7 +295,7 @@ describe('readdir', () => {
     });
 
     it('should return symlinked directories when not disabled on options', () => {
-      let opts = { ...options, basename: true };
+      let opts = { ...options };
 
       try {
         let link = 'temp-symlink';
@@ -315,7 +317,7 @@ describe('readdir', () => {
     });
 
     it('should ignore nested symlinked files that do not exist', () => {
-      let opts = { ...options, basename: true, symlinks: true };
+      let opts = { ...options, symlinks: true };
 
       cleanup = createFiles(['foo.js', 'bar.js']);
       let tempfile = fixtures('tempfile.js');
@@ -342,7 +344,7 @@ describe('readdir', () => {
     });
 
     it('should ignore nested symlinked directories that do not exist', () => {
-      let opts = { ...options, basename: true, symlinks: true };
+      let opts = { ...options, symlinks: true };
       cleanup = createFiles(['foo.js', 'bar.js']);
 
       let tempdir = fixtures('tempdir/a/b/c');
