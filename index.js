@@ -5,21 +5,6 @@ const path = require('path');
 const util = require('util');
 
 const resolve = str => path.isAbsolute(str) ? str : path.resolve(str);
-const pushFile = (fs, file, options, { filter, ignore, results, symlinks }) => {
-  if (options.cwd === file.path) return;
-  if (file.exists === false) return;
-  if (file.keep !== true) {
-    if (file.isSymbolicLink() && symlinks !== true) return;
-    if (readdir.isDirectory(file) && options.nodir === true) return;
-    if (options.dot !== true && file.isFile() && /^\./.test(file.name)) return;
-  }
-  if (!ignore(file) && file.keep !== false && filter(file) === true) {
-    file.result = readdir.format(file, options, { fs });
-    if (file.result === '') return;
-    if (typeof options.onPush === 'function') options.onPush(file);
-    results[options.unique ? 'add' : 'push'](file.result);
-  }
-};
 
 const readdir = (dir, options, cb) => {
   if (typeof options === 'function') {
@@ -51,37 +36,42 @@ const readdir = (dir, options, cb) => {
 
   let cwd = resolve(dir);
   let base = opts.base ? resolve(opts.base) : cwd;
-  let recurse = opts.recursive === true || opts.depth > 0;
+  let state = { recurse: opts.recursive === true || opts.depth > 0, error: null };
 
-  const push = file => {
-    pushFile(fs, file, opts, { filter, ignore, results, symlinks });
-  };
-
-  let error = null;
-  const handleError = (err, next) => {
-    if (error === null) {
-      error = err;
-      next();
+  const push = async file => {
+    try {
+      if (pushFile(fs, file, opts, { filter, ignore, results, symlinks })) {
+        if (typeof opts.onPush === 'function') await opts.onPush(file, state);
+        results[opts.unique ? 'add' : 'push'](file.result);
+      }
+    } catch (err) {
+      return Promise.reject(err);
     }
   };
 
   const walk = async(folder, next) => {
-    if (error) return;
+    if (state.error) return;
 
-    if (typeof opts.onEach === 'function') {
-      folder = (await opts.onEach(folder)) || folder;
-    }
-    if (typeof opts.onDirectory === 'function') {
-      folder = (await opts.onDirectory(folder)) || folder;
-    }
+    try {
+      if (typeof opts.onEach === 'function') {
+        folder = (await opts.onEach(folder, state)) || folder;
+      }
+      if (typeof opts.onDirectory === 'function') {
+        folder = (await opts.onDirectory(folder, state)) || folder;
+      }
 
-    push(folder);
+      await push(folder);
+    } catch (err) {
+      state.error = err;
+      next(err);
+      return;
+    }
 
     if (typeof folder.recurse === 'boolean') {
-      recurse = folder.recurse;
+      state.recurse = folder.recurse;
     }
 
-    if (folder.path !== cwd && recurse === false) {
+    if (folder.path !== cwd && state.recurse === false) {
       next(null, results);
       return;
     }
@@ -93,8 +83,11 @@ const readdir = (dir, options, cb) => {
     }
 
     fs.readdir(folder.path, { ...options, withFileTypes: true }, (err, files) => {
+      if (state.error) return;
+
       if (err) {
-        handleError(err, next);
+        state.error = err;
+        next(err);
         return;
       }
 
@@ -105,47 +98,51 @@ const readdir = (dir, options, cb) => {
       }
 
       files.forEach(async dirent => {
-        dirent.base = base;
-        dirent.cwd = cwd;
-        let file = readdir.toFile(dirent, folder);
+        if (state.error) return;
 
-        // It's possible that our symlink refers to a file that does not
-        // actually exist. We want to ignore these files.
-        let statFile = async() => {
-          try {
-            file.stat = await stat(file.origPath);
-            file.isDirectory = file.stat.isDirectory.bind(file.stat);
-          } catch (err) {
-            file.exists = false;
+        try {
+          dirent.base = base;
+          dirent.cwd = cwd;
+          let file = readdir.toFile(dirent, folder);
 
-            if (err.code !== 'ENOENT') {
-              handleError(err, next);
-              return;
+          // It's possible that our symlink refers to a file that does not
+          // actually exist. We want to ignore these files.
+          let statFile = async() => {
+            try {
+              file.stat = await stat(file.origPath);
+              file.isDirectory = file.stat.isDirectory.bind(file.stat);
+            } catch (err) {
+              file.exists = false;
+
+              if (err.code !== 'ENOENT') {
+                state.error = err;
+                next(err);
+                return;
+              }
             }
-          }
-        };
+          };
 
-        if (folder.symlink !== void 0 || file.isSymbolicLink()) {
-          file.symlink = folder.symlink || file.path;
-          cache.symlinks.add(file.symlink);
+          if (folder.symlink !== void 0 || file.isSymbolicLink()) {
+            file.symlink = folder.symlink || file.path;
+            cache.symlinks.add(file.symlink);
 
-          if (typeof opts.onSymbolicLink === 'function') {
-            await opts.onSymbolicLink(file);
-          }
+            if (typeof opts.onSymbolicLink === 'function') {
+              await opts.onSymbolicLink(file, state);
+            }
 
-          if ((opts.nodir !== true && follow === true) || opts.stat === true) {
+            if ((opts.nodir !== true && follow === true) || opts.stat === true) {
+              await statFile();
+            }
+
+          } else if (opts.stat === true) {
             await statFile();
           }
 
-        } else if (opts.stat === true) {
-          await statFile();
-        }
-
-        try {
           if (readdir.isDirectory(file)) {
             walk(file, err => {
               if (err) {
-                handleError(err, next);
+                state.error = err;
+                next(err);
                 return;
               }
 
@@ -155,13 +152,13 @@ const readdir = (dir, options, cb) => {
             });
           } else {
             if (typeof opts.onEach === 'function') {
-              file = (await opts.onEach(file)) || file;
+              file = (await opts.onEach(file, state)) || file;
             }
             if (typeof opts.onFile === 'function') {
-              file = (await opts.onFile(file)) || file;
+              file = (await opts.onFile(file, state)) || file;
             }
 
-            push(file);
+            await push(file);
 
             if (--len === 0) {
               next(null, results);
@@ -171,7 +168,8 @@ const readdir = (dir, options, cb) => {
           file.keep = false;
 
           if (err.code !== 'ENOENT' || !err.stack.includes('realpathSync')) {
-            handleError(err, next);
+            state.error = err;
+            next(err);
             return;
           }
 
@@ -193,7 +191,7 @@ const readdir = (dir, options, cb) => {
   file.depth = -1;
 
   walk(file, (err, files) => {
-    if (error) err = error;
+    if (state.error) err = state.error;
     if (err && err.code === 'ENOENT' && err.path === cwd) {
       err.message = err.message.replace('ENOENT: ', 'ENOENT: Invalid cwd, ');
     }
@@ -201,7 +199,7 @@ const readdir = (dir, options, cb) => {
   });
 };
 
-readdir.sync = (dir, options = {}) => {
+readdir.sync = (dir, options) => {
   if (Array.isArray(dir)) {
     return readdirsSync(dir, options);
   }
@@ -221,26 +219,29 @@ readdir.sync = (dir, options = {}) => {
 
   let cwd = resolve(dir);
   let base = opts.base ? resolve(opts.base) : cwd;
-  let recurse = opts.recursive === true || opts.depth > 0;
+  let state = { recurse: opts.recursive === true || opts.depth > 0, error: null };
 
   const push = file => {
-    pushFile(fs, file, opts, { filter, ignore, results, symlinks });
+    if (pushFile(fs, file, opts, { filter, ignore, results, symlinks })) {
+      if (typeof opts.onPush === 'function') opts.onPush(file, state);
+      results[opts.unique ? 'add' : 'push'](file.result);
+    }
   };
 
   const walk = folder => {
     if (typeof opts.onEach === 'function') {
-      folder = opts.onEach(folder) || folder;
+      folder = opts.onEach(folder, state) || folder;
     }
     if (typeof opts.onDirectory === 'function') {
-      folder = opts.onDirectory(folder) || folder;
+      folder = opts.onDirectory(folder, state) || folder;
     }
     if (typeof folder.recurse === 'boolean') {
-      recurse = folder.recurse;
+      state.recurse = folder.recurse;
     }
 
     push(folder);
 
-    if (folder.path !== cwd && recurse === false) {
+    if (folder.path !== cwd && state.recurse === false) {
       return;
     }
 
@@ -254,50 +255,54 @@ readdir.sync = (dir, options = {}) => {
       return;
     }
 
-    files.forEach(dirent => {
-      dirent.base = base;
-      dirent.cwd = cwd;
-      let file = readdir.toFile(dirent, folder);
+    for (let dirent of files) {
+      try {
+        dirent.base = base;
+        dirent.cwd = cwd;
+        let file = readdir.toFile(dirent, folder);
 
-      // It's possible that our symlink refers to a file that does not
-      // actually exist. We want to ignore these files.
-      let statFile = () => {
-        try {
-          file.stat = fs.statSync(file.origPath);
-          file.isDirectory = file.stat.isDirectory.bind(file.stat);
-        } catch (err) {
-          if (err.code !== 'ENOENT') {
-            throw err;
+        // It's possible that our symlink refers to a file that does not
+        // actually exist. We want to ignore these files.
+        let statFile = () => {
+          try {
+            file.stat = fs.statSync(file.origPath);
+            file.isDirectory = file.stat.isDirectory.bind(file.stat);
+          } catch (err) {
+            file.exists = false;
+
+            if (err.code !== 'ENOENT') {
+              throw err;
+            }
           }
-          file.exists = false;
-        }
-      };
+        };
 
-      if (opts.stat === true || folder.symlink !== void 0 || file.isSymbolicLink()) {
-        file.symlink = folder.symlink || file.path;
-        cache.symlinks.add(file.symlink);
-        if (typeof opts.onSymbolicLink === 'function') {
-          opts.onSymbolicLink(file);
-        }
+        if (folder.symlink !== void 0 || file.isSymbolicLink()) {
+          file.symlink = folder.symlink || file.path;
+          cache.symlinks.add(file.symlink);
 
-        if ((opts.nodir !== true && follow === true) || opts.stat === true) {
+          if (typeof opts.onSymbolicLink === 'function') {
+            opts.onSymbolicLink(file, state);
+          }
+
+          if ((opts.nodir !== true && follow === true) || opts.stat === true) {
+            statFile();
+          }
+
+        } else if (opts.stat === true) {
           statFile();
         }
 
-      } else if (opts.stat === true) {
-        statFile();
-      }
-
-      try {
         if (readdir.isDirectory(file)) {
           walk(file);
+
         } else {
           if (typeof opts.onEach === 'function') {
-            file = opts.onEach(file) || file;
+            file = opts.onEach(file, state) || file;
           }
           if (typeof opts.onFile === 'function' && file.isFile()) {
-            file = opts.onFile(file) || file;
+            file = opts.onFile(file, state) || file;
           }
+
           push(file);
         }
 
@@ -308,14 +313,13 @@ readdir.sync = (dir, options = {}) => {
           throw err;
         }
       }
-    });
+    }
   };
 
   // create the initial file object, for our root directory
   let file = readdir.toFile({ path: cwd, name: '' });
   file.base = base;
   file.cwd = cwd;
-
   file.isSymbolicLink = () => false;
   file.isDirectory = () => true;
   file.isFile = () => false;
@@ -324,7 +328,8 @@ readdir.sync = (dir, options = {}) => {
   try {
     walk(file);
   } catch (err) {
-    if (err.code === 'ENOENT' && err.path === cwd) {
+    if (state.error) err = state.error;
+    if (err && err.code === 'ENOENT' && err.path === cwd) {
       err.message = err.message.replace('ENOENT: ', 'ENOENT: Invalid cwd, ');
     }
     throw err;
@@ -395,7 +400,8 @@ readdir.relative = file => {
 };
 
 readdir.isDirectory = file => {
-  if (file.stat !== void 0) return file.stat.isDirectory();
+  if (!file) return false;
+  if (file.stat) return file.stat.isDirectory();
   if (typeof file.isDirectory === 'function') {
     return file.isDirectory();
   }
@@ -442,6 +448,22 @@ const readdirsSync = (dirs, options) => {
 
   for (let dir of dirs) readdir.sync(dir, opts);
   return opts.unique ? [...new Set(files)] : files;
+};
+
+const pushFile = (fs, file, options, { filter, ignore, results, symlinks }) => {
+  if (options.cwd === file.path) return false;
+  if (file.exists === false) return false;
+  if (file.keep !== true) {
+    if (file.isSymbolicLink() && symlinks !== true) return false;
+    if (readdir.isDirectory(file) && options.nodir === true) return false;
+    if (options.dot !== true && file.isFile() && /^\./.test(file.name)) return false;
+  }
+  if (!ignore(file) && file.keep !== false && filter(file) === true) {
+    file.result = readdir.format(file, options, { fs });
+    if (file.result === '') return false;
+    return true;
+  }
+  return false;
 };
 
 module.exports = readdir;

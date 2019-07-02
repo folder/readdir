@@ -80,6 +80,7 @@ describe('readdir', () => {
       return readdir([fixtures('a'), fixtures('b')])
         .then(files => {
           cleanup();
+          files.sort();
           assert.equal(files.length, 2);
           assert.equal(files[0], 'a');
           assert.equal(files[1], 'b');
