@@ -42,7 +42,9 @@ const readdir = (dir, options, cb) => {
     try {
       if (pushFile(fs, file, opts, { filter, ignore, results, symlinks })) {
         if (typeof opts.onPush === 'function') await opts.onPush(file, state);
-        results[opts.unique ? 'add' : 'push'](file.result);
+        if (file.ignore !== true) {
+          results[opts.unique ? 'add' : 'push'](file.result);
+        }
       }
     } catch (err) {
       return Promise.reject(err);
@@ -86,6 +88,17 @@ const readdir = (dir, options, cb) => {
       if (state.error) return;
 
       if (err) {
+        if (typeof opts.onError === 'function') {
+          err.opts = opts;
+          err.state = state;
+          err.path = folder.path;
+          let error = opts.onError(err, folder, { options: opts, state });
+          if (error === null) {
+            next(null, results);
+            return;
+          }
+        }
+
         state.error = err;
         next(err);
         return;
@@ -104,6 +117,11 @@ const readdir = (dir, options, cb) => {
           dirent.base = base;
           dirent.cwd = cwd;
           let file = readdir.toFile(dirent, folder);
+
+          if (ignore(file)) {
+            if (--len === 0) next(null, results);
+            return;
+          }
 
           // It's possible that our symlink refers to a file that does not
           // actually exist. We want to ignore these files.
@@ -224,11 +242,15 @@ readdir.sync = (dir, options) => {
   const push = file => {
     if (pushFile(fs, file, opts, { filter, ignore, results, symlinks })) {
       if (typeof opts.onPush === 'function') opts.onPush(file, state);
-      results[opts.unique ? 'add' : 'push'](file.result);
+      if (file.ignore !== true) {
+        results[opts.unique ? 'add' : 'push'](file.result);
+      }
     }
   };
 
   const walk = folder => {
+    let files;
+
     if (typeof opts.onEach === 'function') {
       folder = opts.onEach(folder, state) || folder;
     }
@@ -250,7 +272,21 @@ readdir.sync = (dir, options) => {
       return;
     }
 
-    let files = fs.readdirSync(folder.path, { ...options, withFileTypes: true });
+    try {
+      files = fs.readdirSync(folder.path, { ...options, withFileTypes: true });
+    } catch (err) {
+      if (typeof opts.onError === 'function') {
+        err.opts = opts;
+        err.state = state;
+        err.path = folder.path;
+        let error = opts.onError(err, folder, { options: opts, state });
+        if (error === null) {
+          return;
+        }
+      }
+      throw err;
+    }
+
     if (files.length === 0) {
       return;
     }
@@ -260,6 +296,9 @@ readdir.sync = (dir, options) => {
         dirent.base = base;
         dirent.cwd = cwd;
         let file = readdir.toFile(dirent, folder);
+        if (ignore(file)) {
+          continue;
+        }
 
         // It's possible that our symlink refers to a file that does not
         // actually exist. We want to ignore these files.
@@ -328,6 +367,7 @@ readdir.sync = (dir, options) => {
   try {
     walk(file);
   } catch (err) {
+    /* eslint-disable no-ex-assign */
     if (state.error) err = state.error;
     if (err && err.code === 'ENOENT' && err.path === cwd) {
       err.message = err.message.replace('ENOENT: ', 'ENOENT: Invalid cwd, ');
@@ -451,6 +491,7 @@ const readdirsSync = (dirs, options) => {
 };
 
 const pushFile = (fs, file, options, { filter, ignore, results, symlinks }) => {
+  if (ignore(file)) return false;
   if (options.cwd === file.path) return false;
   if (file.exists === false) return false;
   if (file.keep !== true) {
@@ -458,7 +499,7 @@ const pushFile = (fs, file, options, { filter, ignore, results, symlinks }) => {
     if (readdir.isDirectory(file) && options.nodir === true) return false;
     if (options.dot !== true && file.isFile() && /^\./.test(file.name)) return false;
   }
-  if (!ignore(file) && file.keep !== false && filter(file) === true) {
+  if (file.keep !== false && filter(file) === true) {
     file.result = readdir.format(file, options, { fs });
     if (file.result === '') return false;
     return true;
