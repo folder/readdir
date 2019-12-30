@@ -446,6 +446,20 @@ describe('readdir', () => {
     });
   });
 
+  describe('options.unique', () => {
+    it('should not return duplicate directories', () => {
+      cleanup = createFiles(['a/a/a', 'a/a/b', 'a/a/c']);
+
+      return readdir([fixtures(), fixtures(), fixtures('a')], { unique: true })
+        .then(files => {
+          cleanup();
+          files.sort();
+          assert.equal(files.length, 1);
+          assert.equal(files[0], 'a');
+        });
+    });
+  });
+
   describe('options.realpath', () => {
     it('should return realpaths', () => {
       let paths = ['a/a/a', 'a/a/b', 'a/a/c'];
