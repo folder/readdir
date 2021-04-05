@@ -5,14 +5,13 @@ const readdirp = require('readdirp');
 const Composer = require('composer');
 const composer = new Composer();
 const bench = require('./bench');
-const readdir = require('..');
+const readdir = require('../lib/basic');
 
 const enhanced = (dir, options) => {
-  const filter = file => !/(^|\/)\./.test(file.path);
-  let files = [];
+  const files = [];
 
   return new Promise((resolve, reject) => {
-    readdirEnhanced.stream(dir, { deep: false, filter, ...options })
+    readdirEnhanced.stream(dir, { deep: false, ...options })
       .on('data', () => {})
       .on('file', file => files.push(file))
       .on('directory', file => files.push(file))
@@ -22,11 +21,13 @@ const enhanced = (dir, options) => {
       });
 
   });
-}
+};
+
+const log = files => console.log(files.sort().length);
 
 composer.task('readdir', () => {
   return bench('readdir')
-    .add('@folder/readdir', () => readdir(__dirname, { nodir: true }))
+    .add('@folder/readdir', () => readdir(__dirname, { recursive: false }))
     .add('readdir-enhanced', () => enhanced(__dirname))
     .add('readdirp', () => readdirp.promise(__dirname, { depth: 1 }))
     .run();
@@ -40,6 +41,6 @@ composer.task('recursive', () => {
     .run();
 });
 
-composer.task('default', ['readdir', 'recursive']);
+composer.task('benchmarks', ['readdir', 'recursive']);
 
-composer.build('default').catch(console.error);
+composer.build('benchmarks').catch(console.error);

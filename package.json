@@ -1,9 +1,12 @@
 {
-  "name": "@folder/readdir",
+  "name": "readdir",
   "description": "Recursively read a directory, blazing fast.",
   "version": "2.1.0",
   "homepage": "https://github.com/@folder/readdir",
   "author": "Jon Schlinkert (https://github.com/jonschlinkert)",
+  "funding": {
+    "url": "https://github.com/sponsors/jonschlinkert"
+  },
   "repository": "@folder/readdir",
   "bugs": {
     "url": "https://github.com/@folder/readdir/issues"
@@ -14,13 +17,16 @@
   ],
   "main": "index.js",
   "engines": {
-    "node": ">=4"
+    "node": ">=10"
+  },
+  "dependencies": {
+    "picomatch": "^2.2.2"
   },
   "devDependencies": {
     "gulp-format-md": "^2.0.0",
-    "mocha": "^5.2.0",
-    "rimraf": "^2.6.3",
-    "write": "^1.0.3"
+    "mocha": "^6.2.2",
+    "rimraf": "^3.0.0",
+    "write": "^2.0.0"
   },
   "keywords": [
     "absolute",
@@ -28,12 +34,12 @@
     "await",
     "deep",
     "dir",
-    "dirs",
     "directories",
     "directory",
     "dirname",
-    "file system",
+    "dirs",
     "file",
+    "file system",
     "files",
     "filesystem",
     "filter",
