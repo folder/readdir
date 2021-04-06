@@ -17,7 +17,7 @@ let cleanup = () => {};
 const createFiles = names => {
   if (!names) return () => {};
   const paths = names.map(name => temp(name));
-  paths.forEach(file => write.sync(file, 'temp'));
+  paths.forEach(fp => write.sync(fp, 'temp'));
   return () => paths.forEach(file => unlinkSync(file));
 };
 
@@ -27,20 +27,22 @@ const cleanupTemp = () => {
   }
 };
 
-const createSymlink = (type, linkname, files) => {
+const createSymlink = (type, name, files) => {
   const cleanup = createFiles(files);
-  const dest = temp(linkname);
-  const src = type === 'file' ? __filename : temp();
+  const dest = temp(name);
+  const src = type === 'file' ? __filename : __dirname;
   fs.symlinkSync(src, dest, type);
+
   return () => {
     unlinkSync(dest);
     cleanup();
   };
 };
 
-const createSymlinks = (type, links, files) => {
+const createSymlinks = (type, names, files) => {
   const cleanup = createFiles(files);
-  const fns = links.map(link => createSymlink(type, link));
+  const fns = names.map(name => createSymlink(type, name));
+
   return () => {
     fns.forEach(fn => fn());
     cleanup();
@@ -115,7 +117,7 @@ describe('readdir.sync', () => {
     it('should recursively read files (depth: 3)', () => {
       cleanup = createFiles(['a/b/c/d/e', 'a/a/b/c/d']);
       const files = readdir.sync(temp(), { depth: 3 });
-      cleanup();
+
       files.sort();
       assert.deepEqual(files, [ 'a', 'a/a', 'a/a/b', 'a/b', 'a/b/c' ].sort());
     });
@@ -310,7 +312,6 @@ describe('readdir.sync', () => {
 
       } catch (err) {
         throw err;
-
       } finally {
         cleanup();
       }
