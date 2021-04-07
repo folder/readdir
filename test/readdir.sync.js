@@ -22,8 +22,10 @@ const createFiles = names => {
 };
 
 const cleanupTemp = () => {
-  for (const file of fs.readdirSync(temp())) {
-    unlinkSync(temp(file));
+  if (fs.existsSync(temp())) {
+    for (const file of fs.readdirSync(temp())) {
+      unlinkSync(temp(file));
+    }
   }
 };
 
