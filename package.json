@@ -13,7 +13,8 @@
   },
   "license": "MIT",
   "files": [
-    "index.js"
+    "index.js",
+    "lib"
   ],
   "main": "index.js",
   "engines": {
@@ -21,9 +22,6 @@
   },
   "scripts": {
     "test": "mocha"
-  },
-  "dependencies": {
-    "picomatch": "^2.2.2"
   },
   "devDependencies": {
     "gulp-format-md": "^2.0.0",

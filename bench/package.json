@@ -9,10 +9,10 @@
   "dependencies": {
     "@mrmlnc/readdir-enhanced": "^2.2.1",
     "composer": "^4.1.0",
+    "fdir": "^5.0.0",
     "readdirp": "^3.0.0"
   },
   "devDependencies": {
-    "ansi-colors": "^4.1.1",
-    "minimist": "^1.2.5"
+    "ansi-colors": "^4.1.1"
   }
 }
