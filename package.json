@@ -19,6 +19,9 @@
   "engines": {
     "node": ">=10"
   },
+  "scripts": {
+    "test": "mocha"
+  },
   "dependencies": {
     "picomatch": "^2.2.2"
   },
