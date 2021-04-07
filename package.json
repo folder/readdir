@@ -1,15 +1,15 @@
 {
-  "name": "readdir",
+  "name": "@folder/readdir",
   "description": "Recursively read a directory, blazing fast.",
   "version": "2.1.0",
-  "homepage": "https://github.com/@folder/readdir",
+  "homepage": "https://github.com/@older/readdir",
   "author": "Jon Schlinkert (https://github.com/jonschlinkert)",
   "funding": {
     "url": "https://github.com/sponsors/jonschlinkert"
   },
-  "repository": "@folder/readdir",
+  "repository": "folder/readdir",
   "bugs": {
-    "url": "https://github.com/@folder/readdir/issues"
+    "url": "https://github.com/folder/readdir/issues"
   },
   "license": "MIT",
   "files": [
@@ -24,8 +24,8 @@
   },
   "devDependencies": {
     "gulp-format-md": "^2.0.0",
-    "mocha": "^6.2.2",
-    "rimraf": "^3.0.0",
+    "mocha": "^8.3.2",
+    "rimraf": "^3.0.2",
     "write": "^2.0.0"
   },
   "keywords": [
