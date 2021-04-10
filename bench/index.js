@@ -41,7 +41,7 @@ const fdirRecursive = (dir, options) => {
     .withPromise();
 };
 
-const log = files => console.log(files.sort().length);
+// const log = files => console.log(files.sort().length);
 
 composer.task('readdir', () => {
   return bench('readdir')

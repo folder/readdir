@@ -10,7 +10,6 @@ const readdir = require('..');
 
 const options = { ignore: ['.DS_Store', 'Thumbs.db'] };
 const temp = (...args) => path.resolve(__dirname, 'temp', ...args);
-const fixtures = (...args) => path.resolve(__dirname, 'fixtures', ...args);
 const unlinkSync = filepath => rimraf.sync(filepath);
 let cleanup = () => {};
 
@@ -304,8 +303,7 @@ describe('readdir', () => {
         assert(files.some(name => name === 'bar.js'));
 
       } catch (err) {
-        throw err;
-
+        return Promise.reject(err);
       } finally {
         cleanup();
       }
@@ -326,7 +324,7 @@ describe('readdir', () => {
         assert(files.some(name => name === 'bar.js'));
 
       } catch (err) {
-        throw err;
+        return Promise.reject(err);
       } finally {
         cleanup();
       }
@@ -450,15 +448,44 @@ describe('readdir', () => {
   });
 
   describe('options.unique', () => {
-    it('should not return duplicate directories', () => {
+    it('should not return duplicates', () => {
       cleanup = createFiles(['a/a/a', 'a/a/b', 'a/a/c']);
 
-      return readdir([temp(), temp(), temp('a')], { unique: true })
+      return readdir([temp(), temp(), temp('a'), temp(), temp(), temp('a')], { unique: true, recursive: true })
         .then(files => {
           cleanup();
+          assert(files.length > 1);
+          assert(files.includes('a/a/a'));
+          assert(files.includes('a/a/b'));
+          assert(files.includes('a/a/c'));
           files.sort();
-          assert.equal(files.length, 1);
-          assert.equal(files[0], 'a');
+
+          const unique = [...new Set(files)].join('');
+          assert.equal(files.join(''), unique);
+        });
+    });
+
+    it('should not return duplicates when "objects" is true', () => {
+      cleanup = createFiles(['a/a/a', 'a/a/b', 'a/a/c']);
+
+      return readdir([temp(), temp(), temp('a'), temp(), temp(), temp('a')], {
+        objects: true,
+        recursive: true,
+        unique: true
+      })
+        .then(files => {
+          cleanup();
+          assert(files.length > 1);
+
+          const paths = files.map(file => file.relative);
+          assert(paths.length > 1);
+          assert(paths.includes('a/a/a'));
+          assert(paths.includes('a/a/b'));
+          assert(paths.includes('a/a/c'));
+          paths.sort();
+
+          const unique = [...new Set(paths)].join('');
+          assert.equal(paths.join(''), unique);
         });
     });
   });

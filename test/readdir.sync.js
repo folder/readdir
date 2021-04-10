@@ -10,7 +10,6 @@ const readdir = require('..');
 
 const options = { ignore: ['.DS_Store', 'Thumbs.db'] };
 const temp = (...args) => path.resolve(__dirname, 'temp', ...args);
-const fixtures = (...args) => path.resolve(__dirname, 'fixtures', ...args);
 const unlinkSync = filepath => rimraf.sync(filepath);
 let cleanup = () => {};
 
@@ -279,44 +278,29 @@ describe('readdir.sync', () => {
     });
 
     it('should return symlinked files when not disabled on options', () => {
-      try {
-        const link = 'temp-symlink.js';
-        cleanup = createSymlink('file', link, ['foo.js', 'bar.js']);
+      const link = 'temp-symlink.js';
+      cleanup = createSymlink('file', link, ['foo.js', 'bar.js']);
 
-        const files = readdir.sync(temp(), { ...options });
+      const files = readdir.sync(temp(), { ...options });
 
-        assert(files.length > 0);
-        assert(files.some(name => name === link));
-        assert(files.some(name => name === 'foo.js'));
-        assert(files.some(name => name === 'bar.js'));
-
-      } catch (err) {
-        throw err;
-
-      } finally {
-        cleanup();
-      }
+      assert(files.length > 0);
+      assert(files.some(name => name === link));
+      assert(files.some(name => name === 'foo.js'));
+      assert(files.some(name => name === 'bar.js'));
     });
 
     it('should return symlinked directories when not disabled on options', () => {
       const opts = { ...options };
 
-      try {
-        const link = 'temp-symlink';
-        cleanup = createSymlink('dir', link, ['foo.js', 'bar.js']);
+      const link = 'temp-symlink';
+      cleanup = createSymlink('dir', link, ['foo.js', 'bar.js']);
 
-        const files = readdir.sync(temp(), opts);
+      const files = readdir.sync(temp(), opts);
 
-        assert(files.length > 0);
-        assert(files.some(name => name === link));
-        assert(files.some(name => name === 'foo.js'));
-        assert(files.some(name => name === 'bar.js'));
-
-      } catch (err) {
-        throw err;
-      } finally {
-        cleanup();
-      }
+      assert(files.length > 0);
+      assert(files.some(name => name === link));
+      assert(files.some(name => name === 'foo.js'));
+      assert(files.some(name => name === 'bar.js'));
     });
 
     it('should ignore nested symlinked files that do not exist', () => {
@@ -326,24 +310,18 @@ describe('readdir.sync', () => {
       const tempfile = temp('tempfile.js');
       const link = temp('link.js');
 
-      try {
-        write.sync(tempfile, 'temp');
-        fs.symlinkSync(tempfile, link, 'file');
-        unlinkSync(tempfile);
+      process.on('exit', () => unlinkSync(link));
 
-        const files = readdir.sync(temp(), opts);
+      write.sync(tempfile, 'temp');
+      fs.symlinkSync(tempfile, link, 'file');
+      unlinkSync(tempfile);
 
-        assert(files.length > 0);
-        assert(!files.some(name => name === link));
-        assert(files.some(name => name === 'foo.js'));
-        assert(files.some(name => name === 'bar.js'));
+      const files = readdir.sync(temp(), opts);
 
-      } catch (err) {
-        throw err;
-      } finally {
-        cleanup();
-        unlinkSync(link);
-      }
+      assert(files.length > 0);
+      assert(!files.some(name => name === link));
+      assert(files.some(name => name === 'foo.js'));
+      assert(files.some(name => name === 'bar.js'));
     });
 
     it('should ignore nested symlinked directories that do not exist', () => {
@@ -352,25 +330,18 @@ describe('readdir.sync', () => {
 
       const tempdir = temp('tempdir/a/b/c');
       const link = temp('link');
+      process.on('exit', () => unlinkSync(link));
 
-      try {
-        fs.mkdirSync(tempdir, { recursive: true });
-        fs.symlinkSync(tempdir, link, 'dir');
-        rimraf.sync(tempdir);
+      fs.mkdirSync(tempdir, { recursive: true });
+      fs.symlinkSync(tempdir, link, 'dir');
+      rimraf.sync(tempdir);
 
-        const files = readdir.sync(temp(), opts);
+      const files = readdir.sync(temp(), opts);
 
-        assert(files.length > 0);
-        assert(!files.some(name => name === link));
-        assert(files.some(name => name === 'foo.js'));
-        assert(files.some(name => name === 'bar.js'));
-
-      } catch (err) {
-        throw err;
-      } finally {
-        cleanup();
-        unlinkSync(link);
-      }
+      assert(files.length > 0);
+      assert(!files.some(name => name === link));
+      assert(files.some(name => name === 'foo.js'));
+      assert(files.some(name => name === 'bar.js'));
     });
 
     it('should only get first-level symlinks by default', () => {
@@ -506,27 +477,20 @@ describe('readdir.sync', () => {
     const opts = { ...options, relative: true, symlinks: true, base: __dirname };
 
     it('should match symlinks', () => {
-      try {
-        const names = fs.readdirSync(path.join(__dirname, '..'));
-        cleanup = createSymlinks('file', names, ['foo.js', 'bar.js']);
+      const names = fs.readdirSync(path.join(__dirname, '..'));
+      cleanup = createSymlinks('file', names, ['foo.js', 'bar.js']);
 
-        const isMatch = file => !/license/i.test(file.path);
-        const files = readdir.sync(temp(), { ...opts, isMatch });
+      const isMatch = file => !/license/i.test(file.path);
+      const files = readdir.sync(temp(), { ...opts, isMatch });
 
-        assert(files.length > 0);
-        // symlinks
-        assert(files.some(name => name === 'temp/README.md'));
-        assert(!files.some(name => name === 'temp/LICENSE'));
+      assert(files.length > 0);
+      // symlinks
+      assert(files.some(name => name === 'temp/README.md'));
+      assert(!files.some(name => name === 'temp/LICENSE'));
 
-        // files
-        assert(files.some(name => name === 'temp/foo.js'));
-        assert(files.some(name => name === 'temp/bar.js'));
-
-      } catch (err) {
-        throw err;
-      } finally {
-        cleanup();
-      }
+      // files
+      assert(files.some(name => name === 'temp/foo.js'));
+      assert(files.some(name => name === 'temp/bar.js'));
     });
 
     it('should match files', () => {
