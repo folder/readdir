@@ -1,17 +1,17 @@
 {
   "name": "@folder/readdir",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "Recursively read a directory, blazing fast.",
+  "license": "MIT",
   "repository": "folder/readdir",
   "homepage": "https://github.com/folder/readdir",
+  "bugs": "https://github.com/folder/readdir/issues",
   "author": "Jon Schlinkert (https://github.com/jonschlinkert)",
-  "funding": {
-    "url": "https://github.com/sponsors/jonschlinkert"
-  },
-  "bugs": {
-    "url": "https://github.com/folder/readdir/issues"
-  },
-  "license": "MIT",
+  "funding": [
+    "https://github.com/sponsors/jonschlinkert",
+    "https://paypal.me/jonathanschlinkert",
+    "https://jonschlinkert.dev/sponsor"
+  ],
   "files": [
     "index.js",
     "lib"
