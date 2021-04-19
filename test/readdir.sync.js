@@ -415,6 +415,40 @@ describe('readdir.sync', () => {
     });
   });
 
+  describe('options.isMatch', () => {
+    it('should keep matching directories', () => {
+      cleanup = createFiles(['bb/b/b', 'aa/a/a', 'cc/c/c']);
+
+      const isMatch = dir => {
+        return dir.name !== 'b';
+      };
+
+      const files = readdir.sync('test/temp', { absolute: true, recursive: true, isMatch });
+
+      cleanup();
+      assert(files.length > 1);
+      assert(files.includes(temp('aa/a/a')));
+      assert(!files.includes(temp('bb/b/b')));
+      assert(files.includes(temp('cc/c/c')));
+    });
+
+    it('should keep matching files', () => {
+      cleanup = createFiles(['b/b/b.txt', 'a/a/a.txt', 'c/c/c.txt']);
+
+      const isMatch = file => {
+        return file.name !== 'b.txt';
+      };
+
+      const files = readdir.sync('test/temp', { absolute: true, recursive: true, isMatch });
+
+      cleanup();
+      assert(files.length > 1);
+      assert(files.includes(temp('a/a/a.txt')));
+      assert(!files.includes(temp('b/b/b.txt')));
+      assert(files.includes(temp('c/c/c.txt')));
+    });
+  });
+
   describe('options.realpath', () => {
     it('should return realpaths', () => {
       const paths = ['a/a/a', 'a/a/b', 'a/a/c'];

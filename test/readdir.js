@@ -459,6 +459,90 @@ describe('readdir', () => {
     });
   });
 
+  describe('options.absolute', () => {
+    it('should return absolute file paths', () => {
+      cleanup = createFiles(['a/a/a', 'a/a/b', 'a/a/c']);
+
+      return readdir('test/temp', { absolute: true, recursive: true })
+        .then(files => {
+          cleanup();
+
+          assert(files.length > 1);
+          assert(files.includes(temp('a/a/a')));
+          assert(files.includes(temp('a/a/b')));
+          assert(files.includes(temp('a/a/c')));
+        });
+    });
+  });
+
+  describe('options.isMatch', () => {
+    it('should return matching directories', () => {
+      cleanup = createFiles(['bb/b/b', 'aa/a/a', 'cc/c/c']);
+
+      const isMatch = dir => {
+        return dir.name !== 'b';
+      };
+
+      return readdir('test/temp', { absolute: true, recursive: true, isMatch })
+        .then(files => {
+          cleanup();
+          assert(files.length > 1);
+          assert(files.includes(temp('aa/a/a')));
+          assert(!files.includes(temp('bb/b/b')));
+          assert(files.includes(temp('cc/c/c')));
+        });
+    });
+
+    it('should take an array of functions', () => {
+      cleanup = createFiles(['bb/b/b', 'aa/a/a', 'cc/c/c']);
+
+      const a = file => file.relative.startsWith('aa');
+      const b = file => file.relative.startsWith('bb');
+
+      return readdir('test/temp', { absolute: true, recursive: true, isMatch: [a, b] })
+        .then(files => {
+          cleanup();
+          assert(files.length > 1);
+          assert(files.includes(temp('aa/a/a')));
+          assert(files.includes(temp('bb/b/b')));
+          assert(!files.includes(temp('cc/c/c')));
+        });
+    });
+
+    it('should take an array of regular expressions', () => {
+      cleanup = createFiles(['bb/b/b', 'aa/a/a', 'cc/c/c']);
+
+      const a = file => /^aa(\/|$)/.test(file.relative);
+      const b = file => /^bb(\/|$)/.test(file.relative);
+
+      return readdir('test/temp', { absolute: true, recursive: true, isMatch: [a, b] })
+        .then(files => {
+          cleanup();
+          assert(files.length > 1);
+          assert(files.includes(temp('aa/a/a')));
+          assert(files.includes(temp('bb/b/b')));
+          assert(!files.includes(temp('cc/c/c')));
+        });
+    });
+
+    it('should return matching files', () => {
+      cleanup = createFiles(['b/b/b.txt', 'a/a/a.txt', 'c/c/c.txt']);
+
+      const isMatch = file => {
+        return file.name !== 'b.txt';
+      };
+
+      return readdir('test/temp', { absolute: true, recursive: true, isMatch })
+        .then(files => {
+          cleanup();
+          assert(files.length > 1);
+          assert(files.includes(temp('a/a/a.txt')));
+          assert(!files.includes(temp('b/b/b.txt')));
+          assert(files.includes(temp('c/c/c.txt')));
+        });
+    });
+  });
+
   describe('options.unique', () => {
     it('should not return duplicates', () => {
       cleanup = createFiles(['a/a/a', 'a/a/b', 'a/a/c']);

@@ -1,21 +1,11 @@
 'use strict';
 
 const colors = require('ansi-colors');
-// const argv = require('minimist')(process.argv.slice(2));
-// const since = start => getTime() - start;
-// const _cycle = (bench, newline) => {
-//   process.stdout.write('\u001b[G');
-//   process.stdout.write(`  ${bench.target}` + (newline ? '\n' : ''));
-// };
 
 const getTime = () => new Date().getTime();
 const format = num => num.toLocaleString().replace(/\.\d+$/, '');
-
 const cycle = (name, total, avg, finished = false) => {
-  const color = finished ? colors.green : colors.gray.dim;
-  const check = color(colors.symbols.check);
-  const sep = colors.dim(colors.symbols.pointerSmall);
-  return process.stdout.write(`\r${check} ${name}  ${sep} avg/${format(avg).padEnd(8, ' ')} | t/${format(total).trim()}`);
+  return process.stdout.write(`\r${name} x ${format(avg)} ops/sec (${format(total).trim()} runs sampled)`);
 };
 
 class Bench {
@@ -40,7 +30,7 @@ class Bench {
   async run(options) {
     const opts = { ...this.options, ...options };
     const results = [];
-    console.log(this.name);
+    console.log(`# ${this.name}`);
 
     for (const bench of this.benchmarks) {
       if (opts.onRun) opts.onRun(bench);

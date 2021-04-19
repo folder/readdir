@@ -1,6 +1,6 @@
 {
   "name": "bench",
-  "description": "Benchmarks for readdir",
+  "description": "Benchmarks for @folder/readdir",
   "version": "0.0.0",
   "private": true,
   "scripts": {
@@ -10,7 +10,9 @@
     "@mrmlnc/readdir-enhanced": "^2.2.1",
     "composer": "^4.1.0",
     "fdir": "^5.0.0",
-    "readdirp": "^3.0.0"
+    "readdirp": "^3.0.0",
+    "rimraf": "^3.0.2",
+    "systeminformation": "^5.6.12"
   },
   "devDependencies": {
     "ansi-colors": "^4.1.1"
