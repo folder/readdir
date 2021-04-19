@@ -8,20 +8,19 @@ const write = require('write');
 const rimraf = require('rimraf');
 const _readdir = require('..');
 
-const readdir = (...args) => {
-  return _readdir(...args).then(files => {
-    for (let i = 0; i < files.length; i++) {
-      if (typeof files[i] === 'string') {
-        files[i] = files[i].replace(/\\/g, '/');
-      }
-    }
-    return files;
+const unixify = input => input.replace(/\\/g, '/');
+
+const readdir =  async (...args) => {
+  const files = await _readdir(...args);
+
+  return files.map(file => {
+    return typeof file === 'string' ? unixify(file) : file;
   });
 };
 
 const options = { ignore: ['.DS_Store', 'Thumbs.db'] };
-const temp = (...args) => path.resolve(__dirname, 'temp', ...args).replace(/\\/g, '/');
-const unlinkSync = filepath => rimraf.sync(filepath);
+const temp = (...args) => unixify(path.resolve(__dirname, 'temp', ...args));
+const unlinkSync = filepath => rimraf.sync(filepath, { glob: false });
 let cleanup = () => {};
 
 const createFiles = names => {
@@ -475,78 +474,6 @@ describe('readdir', () => {
     });
   });
 
-  describe('options.isMatch', () => {
-    it('should return matching directories', () => {
-      cleanup = createFiles(['bb/b/b', 'aa/a/a', 'cc/c/c']);
-
-      const isMatch = dir => {
-        return dir.name !== 'b';
-      };
-
-      return readdir('test/temp', { absolute: true, recursive: true, isMatch })
-        .then(files => {
-          cleanup();
-
-          console.log(files);
-          console.log([temp('aa/a/a')]);
-
-          assert(files.length > 1);
-          assert(files.includes(temp('aa/a/a')));
-          assert(!files.includes(temp('bb/b/b')));
-          assert(files.includes(temp('cc/c/c')));
-        });
-    });
-
-    it('should take an array of functions', () => {
-      cleanup = createFiles(['bb/b/b', 'aa/a/a', 'cc/c/c']);
-
-      const a = file => file.relative.startsWith('aa');
-      const b = file => file.relative.startsWith('bb');
-
-      return readdir('test/temp', { absolute: true, recursive: true, isMatch: [a, b] })
-        .then(files => {
-          cleanup();
-          assert(files.length > 1);
-          assert(files.includes(temp('aa/a/a')));
-          assert(files.includes(temp('bb/b/b')));
-          assert(!files.includes(temp('cc/c/c')));
-        });
-    });
-
-    it('should take an array of regular expressions', () => {
-      cleanup = createFiles(['bb/b/b', 'aa/a/a', 'cc/c/c']);
-
-      const a = file => /^aa(\/|\\|$)/.test(file.relative);
-      const b = file => /^bb(\/|\\|$)/.test(file.relative);
-
-      return readdir('test/temp', { absolute: true, recursive: true, isMatch: [a, b] })
-        .then(files => {
-          cleanup();
-          assert(files.length > 1);
-          assert(files.includes(temp('aa/a/a')));
-          assert(files.includes(temp('bb/b/b')));
-          assert(!files.includes(temp('cc/c/c')));
-        });
-    });
-
-    it('should return matching files', () => {
-      cleanup = createFiles(['b/b/b.txt', 'a/a/a.txt', 'c/c/c.txt']);
-
-      const isMatch = file => {
-        return file.name !== 'b.txt';
-      };
-
-      return readdir('test/temp', { absolute: true, recursive: true, isMatch })
-        .then(files => {
-          cleanup();
-          assert(files.length > 1);
-          assert(files.includes(temp('a/a/a.txt')));
-          assert(!files.includes(temp('b/b/b.txt')));
-          assert(files.includes(temp('c/c/c.txt')));
-        });
-    });
-  });
-
   describe('options.unique', () => {
     it('should not return duplicates', () => {
       cleanup = createFiles(['a/a/a', 'a/a/b', 'a/a/c']);
@@ -741,6 +668,72 @@ describe('readdir', () => {
         .then(files => {
           assert(files.includes('readdir.sync.js'));
           assert(!files.includes('readdir.js'));
+        });
+    });
+
+ it('should keep matching files', () => {
+      cleanup = createFiles(['b/b/b.txt', 'a/a/a.txt', 'c/c/c.txt']);
+
+      const isMatch = file => {
+        return file.isFile() && file.name !== 'b.txt';
+      };
+
+      return readdir('test/temp', { absolute: true, recursive: true, isMatch })
+        .then(files => {
+          cleanup();
+          assert(files.length > 1);
+          assert(files.includes(temp('a/a/a.txt')));
+          assert(!files.includes(temp('b/b/b.txt')));
+          assert(files.includes(temp('c/c/c.txt')));
+        });
+    });
+
+    it('should keep matching directories', () => {
+      cleanup = createFiles(['bb/b/b', 'aa/a/a', 'cc/c/c']);
+
+      const isMatch = file => {
+        return !file.relative.startsWith('bb');
+      };
+
+      return readdir('test/temp', { absolute: true, recursive: true, isMatch })
+        .then(files => {
+          cleanup();
+          assert(files.length > 1);
+          assert(files.includes(temp('aa/a/a')));
+          assert(!files.includes(temp('bb/b/b')));
+          assert(files.includes(temp('cc/c/c')));
+        });
+    });
+
+    it('should take an array of functions', () => {
+      cleanup = createFiles(['bb/b/b', 'aa/a/a', 'cc/c/c']);
+
+      const a = file => file.relative.startsWith('aa');
+      const b = file => file.relative.startsWith('bb');
+
+      return readdir('test/temp', { absolute: true, recursive: true, isMatch: [a, b] })
+        .then(files => {
+          cleanup();
+          assert(files.length > 1);
+          assert(files.includes(temp('aa/a/a')));
+          assert(files.includes(temp('bb/b/b')));
+          assert(!files.includes(temp('cc/c/c')));
+        });
+    });
+
+    it('should take an array of regular expressions', () => {
+      cleanup = createFiles(['bb/b/b', 'aa/a/a', 'cc/c/c']);
+
+      const a = file => /^aa(\/|\\|$)/.test(file.relative);
+      const b = file => /^bb(\/|\\|$)/.test(file.relative);
+
+      return readdir('test/temp', { absolute: true, recursive: true, isMatch: [a, b] })
+        .then(files => {
+          cleanup();
+          assert(files.length > 1);
+          assert(files.includes(temp('aa/a/a')));
+          assert(files.includes(temp('bb/b/b')));
+          assert(!files.includes(temp('cc/c/c')));
         });
     });
   });

@@ -8,21 +8,19 @@ const write = require('write');
 const rimraf = require('rimraf');
 const readdir = require('..');
 
+const unixify = input => input.replace(/\\/g, '/');
+
 const readdirSync = (...args) => {
   const files = readdir.sync(...args);
 
-  for (let i = 0; i < files.length; i++) {
-    if (typeof files[i] === 'string') {
-      files[i] = files[i].replace(/\\/g, '/');
-    }
-  }
-
-  return files;
+  return files.map(file => {
+    return typeof file === 'string' ? unixify(file) : file;
+  });
 };
 
 const options = { ignore: ['.DS_Store', 'Thumbs.db'] };
-const temp = (...args) => path.resolve(__dirname, 'temp', ...args).replace(/\\/g, '/');
-const unlinkSync = filepath => rimraf.sync(filepath);
+const temp = (...args) => unixify(path.resolve(__dirname, 'temp', ...args));
+const unlinkSync = filepath => rimraf.sync(filepath, { glob: false });
 let cleanup = () => {};
 
 const createFiles = names => {
@@ -415,40 +413,6 @@ describe('readdir.sync', () => {
     });
   });
 
-  describe('options.isMatch', () => {
-    it('should keep matching directories', () => {
-      cleanup = createFiles(['bb/b/b', 'aa/a/a', 'cc/c/c']);
-
-      const isMatch = dir => {
-        return dir.name !== 'b';
-      };
-
-      const files = readdir.sync('test/temp', { absolute: true, recursive: true, isMatch });
-
-      cleanup();
-      assert(files.length > 1);
-      assert(files.includes(temp('aa/a/a')));
-      assert(!files.includes(temp('bb/b/b')));
-      assert(files.includes(temp('cc/c/c')));
-    });
-
-    it('should keep matching files', () => {
-      cleanup = createFiles(['b/b/b.txt', 'a/a/a.txt', 'c/c/c.txt']);
-
-      const isMatch = file => {
-        return file.name !== 'b.txt';
-      };
-
-      const files = readdir.sync('test/temp', { absolute: true, recursive: true, isMatch });
-
-      cleanup();
-      assert(files.length > 1);
-      assert(files.includes(temp('a/a/a.txt')));
-      assert(!files.includes(temp('b/b/b.txt')));
-      assert(files.includes(temp('c/c/c.txt')));
-    });
-  });
-
   describe('options.realpath', () => {
     it('should return realpaths', () => {
       const paths = ['a/a/a', 'a/a/b', 'a/a/c'];
@@ -557,6 +521,38 @@ describe('readdir.sync', () => {
       cleanup();
 
       assert.deepEqual(files, ['c.md', 'a/a/a/a.md', 'a/a/a/b.md'].sort());
+    });
+
+    it('should keep matching files', () => {
+      cleanup = createFiles(['b/b/b.txt', 'a/a/a.txt', 'c/c/c.txt']);
+
+      const isMatch = file => {
+        return file.name !== 'b.txt';
+      };
+
+      const files = readdirSync('test/temp', { absolute: true, recursive: true, isMatch });
+
+      cleanup();
+      assert(files.length > 1);
+      assert(files.includes(temp('a/a/a.txt')));
+      assert(!files.includes(temp('b/b/b.txt')));
+      assert(files.includes(temp('c/c/c.txt')));
+    });
+
+    it('should keep matching directories', () => {
+      cleanup = createFiles(['bb/b/b', 'aa/a/a', 'cc/c/c']);
+
+      const isMatch = file => {
+        return !file.relative.startsWith('bb');
+      };
+
+      const files = readdirSync('test/temp', { absolute: true, recursive: true, isMatch });
+
+      cleanup();
+      assert(files.length > 1);
+      assert(files.includes(temp('aa/a/a')));
+      assert(!files.includes(temp('bb/b/b')));
+      assert(files.includes(temp('cc/c/c')));
     });
   });
 });
