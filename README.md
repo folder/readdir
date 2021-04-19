@@ -1,4 +1,4 @@
-# @folder/readdir
+# @folder/readdir [![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://paypal.me/jonathanschlinkert?locale.x=en_US) [![NPM version](https://img.shields.io/npm/v/@folder/readdir.svg?style=flat)](https://www.npmjs.com/package/@folder/readdir) [![NPM monthly downloads](https://img.shields.io/npm/dm/@folder/readdir.svg?style=flat)](https://npmjs.org/package/@folder/readdir) [![NPM total downloads](https://img.shields.io/npm/dt/@folder/readdir.svg?style=flat)](https://npmjs.org/package/@folder/readdir)
 
 > Recursively read a directory, blazing fast.
 
@@ -6,10 +6,52 @@ Please consider following this project's author, [Jon Schlinkert](https://github
 
 ## Install
 
-Install with [npm](https://www.npmjs.com/):
+Install with [npm](https://www.npmjs.com/) (requires [Node.js](https://nodejs.org/en/) >=10):
 
 ```sh
 $ npm install --save @folder/readdir
+```
+
+## Why is this better for recursively reading directories?
+
+* It's [blazing fast](#benchmarks).
+* It has a simple, [straightforward API](#comparison) and intuitive [options](#options) for advanced use cases.
+* Optionally returns an array of [Dirent](https://nodejs.org/api/fs.html#fs_class_fs_dirent) objects. Returns strings by default.
+* No dependencies
+
+## Benchmarks
+
+_(Note that only the benchmarks against `fdir` are included here since that library claims to be the fastest)_
+
+To run the benchmarks yourself, you'll need to cd into the `bench` folder and run `$ npm i`. Run the `recursive-large` benchmarks last, and before you run them cd into `bench/fixtures` and do `$ npm i`.
+
+**Specs**
+
+* CPU: Intel® Core™ i9-9980HK 2.4GHz
+* Cores: 16 (8 Physical)
+* RAM: 64GB
+* Disk: Apple APPLE SSD AP2048N 1864GB NVMe (PCIe x4)
+* OS: macOS macOS Big Sur (darwin)
+* Kernel: 20.3.0 x64
+* Node: v15.14.0
+* V8: 8.6.395.17-node.28
+
+```
+# single directory (~5-10 files)
+  @folder/readdir x 24,938 ops/sec (124,693 runs sampled)
+             fdir x 24,771 ops/sec (123,858 runs sampled)
+
+# recursive ~220 files
+  @folder/readdir x 1,915 ops/sec (9,576 runs sampled)
+             fdir x 1,850 ops/sec (9,253 runs sampled)
+
+# recursive ~2,700 files
+  @folder/readdir x 155 ops/sec (780 runs sampled)
+             fdir x 145 ops/sec (730 runs sampled)
+
+# recursive ~57,200 files (just gatsby!)
+  @folder/readdir x 11 ops/sec (57 runs sampled)
+             fdir x 10 ops/sec (54 runs sampled)
 ```
 
 ## Usage
@@ -25,29 +67,6 @@ console.log(readdir.sync('.'));
 ```
 
 ## Options
-
-* [absolute](#absolute)
-* [base](#base)
-* [basename](#basename)
-* [cwd](#cwd)
-* [depth](#depth)
-* [dot](#dot)
-* [filter](#filter)
-* [follow](#follow)
-* [format](#format)
-* [ignore](#ignore)
-* [nodir](#nodir)
-* [objects](#objects)
-* [onDirectory](#ondirectory)
-* [onEach](#oneach)
-* [onFile](#onfile)
-* [onPush](#onpush)
-* [onSymbolicLink](#onsymboliclink)
-* [realpath](#realpath)
-* [recursive](#recursive)
-* [relative](#relative)
-* [symlinks](#symlinks)
-* [unique](#unique)
 
 ### absolute
 
@@ -127,22 +146,6 @@ console.log(files);
 //=> ['.DS_Store', '.git', 'LICENSE', 'README.md', 'package.json']
 ```
 
-### filter
-
-**Type**: `function|string|array|regexp`
-
-**Default**: `undefined`
-
-**Example**
-
-```js
-// only return file paths with "foo" somewhere in the path
-console.log(await readdir('some/dir', { filter: /foo/ }));
-
-// only return file paths without "foo" somewhere in the path
-console.log(await readdir('some/dir', { filter: file => !/foo/.test(file.path) }));
-```
-
 ### follow
 
 Follow symbolic links.
@@ -157,29 +160,28 @@ Follow symbolic links.
 console.log(await readdir('some/dir', { follow: true }));
 ```
 
-### format
+### isMatch
 
-Function to be called before a file or directory is pushed in the result array. Unlike [onEach](#oneach), this function is only called on returned files. This allows you to modify the result first, avoiding the need to recurse over the array again after it's returned.
-
-**Type**: `function`
-
-**Default**: `undefined`
-
-```js
-console.log(await readdir('some/dir', { format: true }));
-```
-
-### ignore
-
-**Type**: `function|string|array|regexp`
+**Type**: `function|string|regex|array<function|string|regex>`
 
 **Default**: `undefined`
 
 **Example**
 
 ```js
-// ignore all files with "foo" in the path
-console.log(await readdir('some/dir', { ignore: /foo/ }));
+// only return file paths with "/.git/" somewhere in the path
+console.log(await readdir('some/dir', { isMatch: /\/\.git\// }));
+
+// only return file paths that are not inside "node_modules"
+console.log(await readdir('some/dir', { isMatch: file => !file.relative.includes('node_modules') }));
+
+// get all files that are not named .DS_Store
+console.log(await readdir('some/dir', { isMatch: file => file.name !== '.DS_Store' }));
+
+// use globs
+const picomatch = require('picomatch');
+const isMatch = picomatch('*/*.js');
+console.log(await readdir('some/dir', { isMatch: file => isMatch(file.relative) }));
 ```
 
 ### nodir
@@ -381,9 +383,9 @@ $ npm install -g verbose/verb#dev verb-generate-readme && verb
 
 ### License
 
-Copyright © 2019, [Jon Schlinkert](https://github.com/jonschlinkert).
+Copyright © 2021, [Jon Schlinkert](https://github.com/jonschlinkert).
 Released under the [MIT License](LICENSE).
 
 ***
 
-_This file was generated by [verb-generate-readme](https://github.com/verbose/verb-generate-readme), v0.8.0, on July 02, 2019._
+_This file was generated by [verb-generate-readme](https://github.com/verbose/verb-generate-readme), v0.8.0, on April 19, 2021._

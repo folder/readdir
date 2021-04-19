@@ -1,26 +1,33 @@
 {
   "name": "@folder/readdir",
-  "description": "Recursively read a directory, blazing fast.",
   "version": "2.1.0",
-  "homepage": "https://github.com/@folder/readdir",
+  "description": "Recursively read a directory, blazing fast.",
+  "repository": "folder/readdir",
+  "homepage": "https://github.com/folder/readdir",
   "author": "Jon Schlinkert (https://github.com/jonschlinkert)",
-  "repository": "@folder/readdir",
+  "funding": {
+    "url": "https://github.com/sponsors/jonschlinkert"
+  },
   "bugs": {
-    "url": "https://github.com/@folder/readdir/issues"
+    "url": "https://github.com/folder/readdir/issues"
   },
   "license": "MIT",
   "files": [
-    "index.js"
+    "index.js",
+    "lib"
   ],
   "main": "index.js",
   "engines": {
-    "node": ">=4"
+    "node": ">=10"
+  },
+  "scripts": {
+    "test": "mocha"
   },
   "devDependencies": {
     "gulp-format-md": "^2.0.0",
-    "mocha": "^5.2.0",
-    "rimraf": "^2.6.3",
-    "write": "^1.0.3"
+    "mocha": "^8.3.2",
+    "rimraf": "^3.0.2",
+    "write": "^2.0.0"
   },
   "keywords": [
     "absolute",
@@ -28,12 +35,12 @@
     "await",
     "deep",
     "dir",
-    "dirs",
     "directories",
     "directory",
     "dirname",
-    "file system",
+    "dirs",
     "file",
+    "file system",
     "files",
     "filesystem",
     "filter",
@@ -50,7 +57,6 @@
   ],
   "verb": {
     "toc": false,
-    "badges": false,
     "layout": "default",
     "tasks": [
       "readme"
@@ -58,6 +64,14 @@
     "plugins": [
       "gulp-format-md"
     ],
+    "related": {
+      "links": [
+        "@folder/picomatch",
+        "@folder/micromatch",
+        "@folder/dirent",
+        "@folder/xdg"
+      ]
+    },
     "lint": {
       "reflinks": true
     }
