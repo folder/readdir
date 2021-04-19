@@ -12,11 +12,11 @@ Install with [npm](https://www.npmjs.com/) (requires [Node.js](https://nodejs.or
 $ npm install --save @folder/readdir
 ```
 
-## Why is this better for recursively reading directories?
+## Why use @folder/readdir and not some other lib?
 
 * It's [blazing fast](#benchmarks).
 * It has a simple, [straightforward API](#comparison) and intuitive [options](#options) for advanced use cases.
-* Optionally returns an array of [Dirent](https://nodejs.org/api/fs.html#fs_class_fs_dirent) objects. Returns strings by default.
+* Optionally returns an array of file objects (extends node.js native [fs.Dirent](https://nodejs.org/api/fs.html#fs_class_fs_dirent)). Returns path strings by default.
 * No dependencies
 
 ## Benchmarks
