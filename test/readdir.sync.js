@@ -8,6 +8,18 @@ const write = require('write');
 const rimraf = require('rimraf');
 const readdir = require('..');
 
+const readdirSync = (...args) => {
+  const files = readdir.sync(...args);
+
+  for (let i = 0; i < files.length; i++) {
+    if (typeof files[i] === 'string') {
+      files[i] = files[i].replace(/\\/g, '/');
+    }
+  }
+
+  return files;
+};
+
 const options = { ignore: ['.DS_Store', 'Thumbs.db'] };
 const temp = (...args) => path.resolve(__dirname, 'temp', ...args);
 const unlinkSync = filepath => rimraf.sync(filepath);
@@ -59,20 +71,20 @@ describe('readdir.sync', () => {
 
   describe('no options', () => {
     it('should read files in a directory and return a promise with files', () => {
-      const files = readdir.sync(__dirname);
+      const files = readdirSync(__dirname);
       assert(files.some(file => path.basename(file) === 'readdir.js'));
       assert(files.some(file => path.basename(file) === 'fixtures'));
     });
 
     it('should return an array of files', () => {
-      const files = readdir.sync(__dirname);
+      const files = readdirSync(__dirname);
       assert(files.some(file => file === 'readdir.js'));
       assert(files.some(file => file === 'readdir.sync.js'));
       assert(files.some(file => file === 'fixtures'));
     });
 
     it('should call options.onFile on each file', () => {
-      const files = readdir.sync(__dirname, {
+      const files = readdirSync(__dirname, {
         objects: true,
         onFile(file) {
           if (file.name === 'readdir.js') {
@@ -88,7 +100,7 @@ describe('readdir.sync', () => {
     it('should read only one level by default', () => {
       cleanup = createFiles(['a/a/a', 'a/a/b', 'a/a/c']);
 
-      const files = readdir.sync(temp());
+      const files = readdirSync(temp());
       cleanup();
       assert.equal(files.length, 1);
       assert.equal(files[0], 'a');
@@ -97,7 +109,7 @@ describe('readdir.sync', () => {
     it('should take and array of directories', () => {
       cleanup = createFiles(['a/a/a', 'b/b/b']);
 
-      const files = readdir.sync([temp('a'), temp('b')]);
+      const files = readdirSync([temp('a'), temp('b')]);
       cleanup();
       assert.equal(files.length, 2);
       assert.equal(files[0], 'a');
@@ -109,7 +121,7 @@ describe('readdir.sync', () => {
     it('should recursively read files (depth: 2)', () => {
       cleanup = createFiles(['a/b/c/d/e', 'a/a/b/c/d']);
 
-      const files = readdir.sync(temp(), { depth: 2 });
+      const files = readdirSync(temp(), { depth: 2 });
       cleanup();
       files.sort();
       assert.deepEqual(files, [ 'a', 'a/a', 'a/b' ].sort());
@@ -117,7 +129,7 @@ describe('readdir.sync', () => {
 
     it('should recursively read files (depth: 3)', () => {
       cleanup = createFiles(['a/b/c/d/e', 'a/a/b/c/d']);
-      const files = readdir.sync(temp(), { depth: 3 });
+      const files = readdirSync(temp(), { depth: 3 });
 
       files.sort();
       assert.deepEqual(files, [ 'a', 'a/a', 'a/a/b', 'a/b', 'a/b/c' ].sort());
@@ -126,7 +138,7 @@ describe('readdir.sync', () => {
     it('should recursively read files (depth: 4)', () => {
       cleanup = createFiles(['a/b/c/d/e', 'a/a/b/c/d']);
 
-      const files = readdir.sync(temp(), { depth: 4 });
+      const files = readdirSync(temp(), { depth: 4 });
       cleanup();
       files.sort();
       assert.deepEqual(files, [ 'a', 'a/a', 'a/a/b', 'a/a/b/c', 'a/b', 'a/b/c', 'a/b/c/d' ].sort());
@@ -136,7 +148,7 @@ describe('readdir.sync', () => {
       cleanup = createFiles(['a/b/c/d/e', 'a/a/b/c/d']);
       const expected = [ 'a', 'a/a', 'a/a/b', 'a/a/b/c', 'a/b', 'a/b/c', 'a/b/c/d', 'a/b/c/d/e', 'a/a/b/c/d' ];
 
-      const files = readdir.sync(temp(), { depth: 5 });
+      const files = readdirSync(temp(), { depth: 5 });
       cleanup();
       files.sort();
       assert.deepEqual(files, expected.sort());
@@ -147,7 +159,7 @@ describe('readdir.sync', () => {
     it('should recursively read files', () => {
       cleanup = createFiles(['a/a/a', 'a/a/b', 'a/a/c']);
 
-      const files = readdir.sync(temp(), { recursive: true });
+      const files = readdirSync(temp(), { recursive: true });
       cleanup();
       files.sort();
       assert.deepEqual(files, [ 'a', 'a/a', 'a/a/a', 'a/a/b', 'a/a/c' ].sort());
@@ -163,7 +175,7 @@ describe('readdir.sync', () => {
         fs.symlinkSync(temp(paths[i]), temp(links[i]), 'file');
       }
 
-      const files = readdir.sync(temp(), { recursive: true });
+      const files = readdirSync(temp(), { recursive: true });
       cleanup();
       files.sort();
       assert.deepEqual(files, [ 'a', 'b', 'a/a', 'b/a', ...paths, ...links ].sort());
@@ -172,7 +184,7 @@ describe('readdir.sync', () => {
 
   describe('options.objects', () => {
     it('should return file objects', () => {
-      const files = readdir.sync(__dirname, { objects: true });
+      const files = readdirSync(__dirname, { objects: true });
       assert(files.some(file => file.name === 'readdir.js'));
       assert(files.some(file => file.name === 'fixtures'));
     });
@@ -188,7 +200,7 @@ describe('readdir.sync', () => {
         return file;
       };
 
-      const files = readdir.sync(__dirname, { onFile });
+      const files = readdirSync(__dirname, { onFile });
       assert(files.some(file => path.basename(file) === 'foo.js'));
       assert(files.some(file => path.basename(file) === 'fixtures'));
     });
@@ -201,7 +213,7 @@ describe('readdir.sync', () => {
         file.keep = path.extname(file.path) === '.md';
       };
 
-      const files = readdir.sync(temp(), { onFile, nodir: true, recursive: true });
+      const files = readdirSync(temp(), { onFile, nodir: true, recursive: true });
       cleanup();
       assert.deepEqual(files, [ 'a/a/a.md', 'a/a/c.md', 'a/b/b/b.md' ]);
     });
@@ -216,7 +228,7 @@ describe('readdir.sync', () => {
         }
       };
 
-      const files = readdir.sync(__dirname, { onDirectory });
+      const files = readdirSync(__dirname, { onDirectory });
       assert(files.some(file => path.basename(file) === 'readdir.js'));
       assert(files.some(file => path.basename(file) === 'actual'));
     });
@@ -230,7 +242,7 @@ describe('readdir.sync', () => {
         file.keep = false;
       };
 
-      const files = readdir.sync(temp(), { recursive: true, onDirectory });
+      const files = readdirSync(temp(), { recursive: true, onDirectory });
       cleanup();
       assert.deepEqual(files, [ 'a/a/a.txt', 'a/a/b.txt', 'a/a/c.txt' ]);
     });
@@ -241,7 +253,7 @@ describe('readdir.sync', () => {
       const link = 'temp-symlink.js';
       cleanup = createSymlink('file', link, ['foo.js', 'bar.js']);
 
-      const files = readdir.sync(temp(), { ...options });
+      const files = readdirSync(temp(), { ...options });
       assert(files.length > 0);
       assert(files.some(name => name === link));
       assert(files.some(name => name === 'foo.js'));
@@ -260,7 +272,7 @@ describe('readdir.sync', () => {
 
       fs.symlinkSync(temp('nested'), temp('symlinks'), 'dir');
 
-      const files = readdir.sync(temp(), { recursive: true, symlinks: false });
+      const files = readdirSync(temp(), { recursive: true, symlinks: false });
       cleanup();
       unlinkSync(temp('symlinks'));
 
@@ -281,7 +293,7 @@ describe('readdir.sync', () => {
       const link = 'temp-symlink.js';
       cleanup = createSymlink('file', link, ['foo.js', 'bar.js']);
 
-      const files = readdir.sync(temp(), { ...options });
+      const files = readdirSync(temp(), { ...options });
 
       assert(files.length > 0);
       assert(files.some(name => name === link));
@@ -295,7 +307,7 @@ describe('readdir.sync', () => {
       const link = 'temp-symlink';
       cleanup = createSymlink('dir', link, ['foo.js', 'bar.js']);
 
-      const files = readdir.sync(temp(), opts);
+      const files = readdirSync(temp(), opts);
 
       assert(files.length > 0);
       assert(files.some(name => name === link));
@@ -316,7 +328,7 @@ describe('readdir.sync', () => {
       fs.symlinkSync(tempfile, link, 'file');
       unlinkSync(tempfile);
 
-      const files = readdir.sync(temp(), opts);
+      const files = readdirSync(temp(), opts);
 
       assert(files.length > 0);
       assert(!files.some(name => name === link));
@@ -336,7 +348,7 @@ describe('readdir.sync', () => {
       fs.symlinkSync(tempdir, link, 'dir');
       rimraf.sync(tempdir);
 
-      const files = readdir.sync(temp(), opts);
+      const files = readdirSync(temp(), opts);
 
       assert(files.length > 0);
       assert(!files.some(name => name === link));
@@ -356,7 +368,7 @@ describe('readdir.sync', () => {
 
       fs.symlinkSync(temp('nested'), temp('symlinks'), 'dir');
 
-      const files = readdir.sync(temp(), { recursive: true });
+      const files = readdirSync(temp(), { recursive: true });
       cleanup();
       unlinkSync(temp('symlinks'));
 
@@ -385,7 +397,7 @@ describe('readdir.sync', () => {
 
       fs.symlinkSync(temp('nested'), temp('symlinks'), 'dir');
 
-      const files = readdir.sync(temp(), { recursive: true, follow: true });
+      const files = readdirSync(temp(), { recursive: true, follow: true });
       cleanup();
       unlinkSync(temp('symlinks'));
 
@@ -414,7 +426,7 @@ describe('readdir.sync', () => {
         fs.symlinkSync(temp(paths[i]), temp(links[i]), 'file');
       }
 
-      const files = readdir.sync(temp(), { recursive: true, realpath: true });
+      const files = readdirSync(temp(), { recursive: true, realpath: true });
       cleanup();
       assert.deepEqual(files.sort(), [ 'a', 'b', 'a/a', 'b/a', ...paths, ...paths ].sort());
     });
@@ -429,7 +441,7 @@ describe('readdir.sync', () => {
         fs.symlinkSync(temp(paths[i]), temp(links[i]), 'file');
       }
 
-      const files = readdir.sync(temp(), { recursive: true, realpath: true, unique: true });
+      const files = readdirSync(temp(), { recursive: true, realpath: true, unique: true });
       cleanup();
       assert.deepEqual(files.sort(), [ 'a', 'b', 'a/a', 'b/a', ...paths ].sort());
     });
@@ -442,7 +454,7 @@ describe('readdir.sync', () => {
 
       cleanup = createSymlinks('file', names, ['foo.js', 'bar.js']);
 
-      const files = readdir.sync(temp(), opts);
+      const files = readdirSync(temp(), opts);
       cleanup();
       assert(files.length > 0);
       // symlinks
@@ -460,7 +472,7 @@ describe('readdir.sync', () => {
 
       cleanup = createSymlinks('file', names, ['foo.js', 'bar.js']);
 
-      const files = readdir.sync(temp(), opts);
+      const files = readdirSync(temp(), opts);
       cleanup();
       assert(files.length > 0);
       // symlinks
@@ -481,7 +493,7 @@ describe('readdir.sync', () => {
       cleanup = createSymlinks('file', names, ['foo.js', 'bar.js']);
 
       const isMatch = file => !/license/i.test(file.path);
-      const files = readdir.sync(temp(), { ...opts, isMatch });
+      const files = readdirSync(temp(), { ...opts, isMatch });
 
       assert(files.length > 0);
       // symlinks
@@ -496,7 +508,7 @@ describe('readdir.sync', () => {
     it('should match files', () => {
       const isMatch = file => /sync/.test(file.path);
 
-      const files = readdir.sync(__dirname, { ...opts, isMatch });
+      const files = readdirSync(__dirname, { ...opts, isMatch });
       assert(files.includes('readdir.sync.js'));
     });
 
@@ -507,7 +519,7 @@ describe('readdir.sync', () => {
         return file.isFile() && path.extname(file.path) === '.md';
       };
 
-      const files = readdir.sync(temp(), { recursive: true, isMatch });
+      const files = readdirSync(temp(), { recursive: true, isMatch });
       cleanup();
 
       assert.deepEqual(files, [ 'c.md', 'a/a/a/a.md', 'a/a/a/b.md' ].sort());

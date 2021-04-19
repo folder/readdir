@@ -6,7 +6,18 @@ const path = require('path');
 const assert = require('assert').strict;
 const write = require('write');
 const rimraf = require('rimraf');
-const readdir = require('..');
+const _readdir = require('..');
+
+const readdir = (...args) => {
+  return _readdir(...args).then(files => {
+    for (let i = 0; i < files.length; i++) {
+      if (typeof files[i] === 'string') {
+        files[i] = files[i].replace(/\\/g, '/');
+      }
+    }
+    return files;
+  });
+};
 
 const options = { ignore: ['.DS_Store', 'Thumbs.db'] };
 const temp = (...args) => path.resolve(__dirname, 'temp', ...args);
@@ -478,7 +489,7 @@ describe('readdir', () => {
           cleanup();
           assert(files.length > 1);
 
-          const paths = files.map(file => file.relative);
+          const paths = files.map(file => file.relative.replace(/\\/g, '/'));
           assert(paths.length > 1);
           assert(paths.includes('a/a/a'));
           assert(paths.includes('a/a/b'));
