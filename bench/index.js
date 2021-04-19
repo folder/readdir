@@ -50,13 +50,14 @@ composer.task('recursive-large', () => {
 
 composer.task('recursive-mid', async () => {
   const dir = path.join(__dirname, '..');
+  const files = await readdir(dir, { recursive: true });
 
   if (shouldDelete || fs.existsSync(fixtures)) {
     await rimraf(fixtures, { glob: false });
     await pause(1000);
   }
 
-  return bench('recursive ~2,700 files')
+  return bench(`recursive ~${files.length} files`)
     .add('fdir', () => fdirRecursive(dir))
     .add('@folder/readdir', () => readdir(dir, { recursive: true }))
     .add('readdir-enhanced', () => enhanced.async(dir, { deep: true, basePath: dir }))
