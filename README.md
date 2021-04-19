@@ -19,52 +19,31 @@ $ npm install --save @folder/readdir
 * Optionally returns an array of file objects (extends node.js native [fs.Dirent](https://nodejs.org/api/fs.html#fs_class_fs_dirent)). Returns path strings by default.
 * No dependencies
 
-## Benchmarks
-
-_(Note that only the benchmarks against `fdir` are included here since that library claims to be the fastest)_
-
-To run the benchmarks yourself, you'll need to cd into the `bench` folder and run `$ npm i`. Run the `recursive-large` benchmarks last, and before you run them cd into `bench/fixtures` and do `$ npm i`.
-
-**Specs**
-
-* CPU: Intel® Core™ i9-9980HK 2.4GHz
-* Cores: 16 (8 Physical)
-* RAM: 64GB
-* Disk: Apple APPLE SSD AP2048N 1864GB NVMe (PCIe x4)
-* OS: macOS macOS Big Sur (darwin)
-* Kernel: 20.3.0 x64
-* Node: v15.14.0
-* V8: 8.6.395.17-node.28
-
-```
-# single directory (~5-10 files)
-  @folder/readdir x 24,938 ops/sec (124,693 runs sampled)
-             fdir x 24,771 ops/sec (123,858 runs sampled)
-
-# recursive ~220 files
-  @folder/readdir x 1,915 ops/sec (9,576 runs sampled)
-             fdir x 1,850 ops/sec (9,253 runs sampled)
-
-# recursive ~2,700 files
-  @folder/readdir x 155 ops/sec (780 runs sampled)
-             fdir x 145 ops/sec (730 runs sampled)
-
-# recursive ~57,200 files (just gatsby!)
-  @folder/readdir x 11 ops/sec (57 runs sampled)
-             fdir x 10 ops/sec (54 runs sampled)
-```
-
 ## Usage
 
 ```js
 const readdir = require('@folder/readdir');
+const options = {};
 
 // async usage
-console.log(await readdir('.'));
+console.log(await readdir('somedir', options));
+console.log(await readdir(['two', 'dirs'], options));
 
 // sync usage
-console.log(readdir.sync('.'));
+console.log(readdir.sync('somedir', options));
+console.log(readdir.sync(['two' 'dirs'], options));
 ```
+
+**params**
+
+Both the async and sync functions take the same arguments:
+
+```js
+readdir(dir, options);
+```
+
+* `dir` (string|array) - one or more directories to read
+* `options` - see available [options](#options)
 
 ## Options
 
@@ -338,6 +317,124 @@ Return only unique file paths. Only needed when [options.realpath](#realpath) is
 
 ```js
 console.log(await readdir('some/dir', { unique: true }));
+```
+
+## Tips & Tricks
+
+Use the [onFile](#onFile) option to operate on files as they are read from the file system, before they are pushed onto the results array.
+
+This allows you to pricisely control which files are returned.
+
+_(Note that even when you specify that files should be returned as _paths_ rather than objects, all functions passed on the options will receive files as objects, so that you may manipulate the paths that are returned however you need to)_
+
+```js
+const readdir = require('@folder/readdir');
+const isMatch = file => true;
+
+module.exports = async (dir, options) => {
+  const opts = { absolute: true, recursive: true, objects: true, ...options };
+  const files = [];
+
+  const onFile = file => {
+    if (isMatch(file)) {
+      files.push(file);
+    }
+  };
+
+  await readdir(dir, { ...opts, onFile });
+  return files;
+};
+```
+
+**Files and directories**
+
+The `onFile` option does not receive dir objects, only dirents (files). If you need both files and directories, you can do the following:
+
+```js
+const readdir = require('@folder/readdir');
+const isMatch = file => true;
+
+module.exports = async (dir, options) => {
+  const opts = { recursive: true, objects: true, ...options };
+  const files = [];
+
+  const onDirectory = file => {
+    if (file.name === 'node_modules') {
+      file.recurse = false;
+    }
+  };
+
+  const onFile = file => {
+    if (isMatch(file)) {
+      files.push(file);
+    }
+  };
+
+  await readdir(dir, { ...opts, onFile, onDirectory });
+  return files;
+};
+```
+
+Or you can use [onEach](#onEach) (which gives you each file before it has been determined whether or not the file will be returned based on other criteria and options. this allows you to override default behavior in a granular way), or [onPush](#onPush) (which gives you a file that is going to be returned in the results array).
+
+Here, we only show `onEach`, since it's identical to `onPush` in terms of usage.
+
+```js
+const readdir = require('@folder/readdir');
+
+const ignore = ['node_modules', '.git'];
+const isIgnored = file => ignore.includes(file.nane);
+
+module.exports = async (dir, options) => {
+  const opts = { recursive: true, objects: true, ...options };
+  const files = [];
+
+  const onEach = file => {
+    if (file.isDirectory()) {
+      file.recurse = !isIgnored(file);
+    } else {
+      files.push(file);
+    }
+  };
+
+  await readdir(dir, { ...opts, onFile, onEach });
+  return files;
+};
+```
+
+## Benchmarks
+
+_(Note that only the benchmarks against `fdir` are included here since that library claims to be the fastest)_
+
+To run the benchmarks yourself, you'll need to cd into the `bench` folder and run `$ npm i`. Run the `recursive-large` benchmarks last, and before you run them cd into `bench/fixtures` and do `$ npm i`.
+
+**Specs**
+
+* CPU: Intel® Core™ i9-9980HK 2.4GHz
+* Cores: 16 (8 Physical)
+* RAM: 64GB
+* Disk: Apple APPLE SSD AP2048N 1864GB NVMe (PCIe x4)
+* OS: macOS macOS Big Sur (darwin)
+* Kernel: 20.3.0 x64
+* Node: v15.14.0
+* V8: 8.6.395.17-node.28
+
+```
+# single directory (~5-10 files)
+  @folder/readdir x 24,938 ops/sec (124,693 runs sampled)
+             fdir x 24,771 ops/sec (123,858 runs sampled)
+
+# recursive ~220 files
+  @folder/readdir x 1,915 ops/sec (9,576 runs sampled)
+             fdir x 1,850 ops/sec (9,253 runs sampled)
+
+# recursive ~2,700 files
+  @folder/readdir x 155 ops/sec (780 runs sampled)
+             fdir x 145 ops/sec (730 runs sampled)
+
+# recursive ~57,200 files (just gatsby!)
+  @folder/readdir x 11 ops/sec (57 runs sampled)
+             fdir x 10 ops/sec (54 runs sampled)
 ```
 
 ## About
