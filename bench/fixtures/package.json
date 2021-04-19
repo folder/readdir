@@ -1,0 +1,9 @@
+{
+  "name": "benchmarks-fixtures",
+  "description": "benchmarks-fixtures - extremely bloated monolithic lib to demonstrate readdir perf",
+  "version": "0.0.0",
+  "private": true,
+  "dependencies": {
+    "gatsby": "^3.3.0"
+  }
+}
