@@ -21,7 +21,7 @@ const readdirSync = (...args) => {
 };
 
 const options = { ignore: ['.DS_Store', 'Thumbs.db'] };
-const temp = (...args) => path.resolve(__dirname, 'temp', ...args);
+const temp = (...args) => path.resolve(__dirname, 'temp', ...args).replace(/\\/g, '/');
 const unlinkSync = filepath => rimraf.sync(filepath);
 let cleanup = () => {};
 
@@ -556,7 +556,7 @@ describe('readdir.sync', () => {
       const files = readdirSync(temp(), { recursive: true, isMatch });
       cleanup();
 
-      assert.deepEqual(files, [ 'c.md', 'a/a/a/a.md', 'a/a/a/b.md' ].sort());
+      assert.deepEqual(files, ['c.md', 'a/a/a/a.md', 'a/a/a/b.md'].sort());
     });
   });
 });

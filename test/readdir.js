@@ -20,7 +20,7 @@ const readdir = (...args) => {
 };
 
 const options = { ignore: ['.DS_Store', 'Thumbs.db'] };
-const temp = (...args) => path.resolve(__dirname, 'temp', ...args);
+const temp = (...args) => path.resolve(__dirname, 'temp', ...args).replace(/\\/g, '/');
 const unlinkSync = filepath => rimraf.sync(filepath);
 let cleanup = () => {};
 
@@ -486,6 +486,10 @@ describe('readdir', () => {
       return readdir('test/temp', { absolute: true, recursive: true, isMatch })
         .then(files => {
           cleanup();
+
+          console.log(files);
+          console.log([temp('aa/a/a')]);
+
           assert(files.length > 1);
           assert(files.includes(temp('aa/a/a')));
           assert(!files.includes(temp('bb/b/b')));
@@ -512,8 +516,8 @@ describe('readdir', () => {
     it('should take an array of regular expressions', () => {
       cleanup = createFiles(['bb/b/b', 'aa/a/a', 'cc/c/c']);
 
-      const a = file => /^aa(\/|$)/.test(file.relative);
-      const b = file => /^bb(\/|$)/.test(file.relative);
+      const a = file => /^aa(\/|\\|$)/.test(file.relative);
+      const b = file => /^bb(\/|\\|$)/.test(file.relative);
 
       return readdir('test/temp', { absolute: true, recursive: true, isMatch: [a, b] })
         .then(files => {
