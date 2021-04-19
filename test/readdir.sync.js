@@ -3,7 +3,7 @@
 require('mocha');
 const fs = require('fs');
 const path = require('path');
-const assert = require('assert');
+const assert = require('assert/strict');
 const write = require('write');
 const rimraf = require('rimraf');
 const readdir = require('..');
@@ -61,14 +61,14 @@ describe('readdir.sync', () => {
     it('should read files in a directory and return a promise with files', () => {
       const files = readdir.sync(__dirname);
       assert(files.some(file => path.basename(file) === 'readdir.js'));
-      assert(files.some(file => path.basename(file) === 'temp'));
+      assert(files.some(file => path.basename(file) === 'fixtures'));
     });
 
     it('should return an array of files', () => {
       const files = readdir.sync(__dirname);
       assert(files.some(file => file === 'readdir.js'));
       assert(files.some(file => file === 'readdir.sync.js'));
-      assert(files.some(file => file === 'temp'));
+      assert(files.some(file => file === 'fixtures'));
     });
 
     it('should call options.onFile on each file', () => {
@@ -174,7 +174,7 @@ describe('readdir.sync', () => {
     it('should return file objects', () => {
       const files = readdir.sync(__dirname, { objects: true });
       assert(files.some(file => file.name === 'readdir.js'));
-      assert(files.some(file => file.name === 'temp'));
+      assert(files.some(file => file.name === 'fixtures'));
     });
   });
 
@@ -190,7 +190,7 @@ describe('readdir.sync', () => {
 
       const files = readdir.sync(__dirname, { onFile });
       assert(files.some(file => path.basename(file) === 'foo.js'));
-      assert(files.some(file => path.basename(file) === 'temp'));
+      assert(files.some(file => path.basename(file) === 'fixtures'));
     });
 
     it('should not keep files when file.keep is false', () => {
@@ -210,7 +210,7 @@ describe('readdir.sync', () => {
   describe('options.onDirectory', () => {
     it('should call options.onDirectory function on each directory', () => {
       const onDirectory = file => {
-        if (file.name === 'temp') {
+        if (file.name === 'fixtures') {
           file.path = path.join(path.dirname(file.path), 'actual');
           file.name = 'actual';
         }
