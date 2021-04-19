@@ -15,7 +15,7 @@ $ npm install --save @folder/readdir
 ## Why use @folder/readdir and not some other lib?
 
 * It's [blazing fast](#benchmarks).
-* It has a simple, [straightforward API](#comparison) and intuitive [options](#options) for advanced use cases.
+* It has a simple, [straightforward API](#usage) and intuitive [options](#options) for advanced use cases.
 * Optionally returns an array of file objects (extends node.js native [fs.Dirent](https://nodejs.org/api/fs.html#fs_class_fs_dirent)). Returns path strings by default.
 * No dependencies
 
