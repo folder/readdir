@@ -2,14 +2,14 @@
 
 const colors = require('ansi-colors');
 // const argv = require('minimist')(process.argv.slice(2));
-
-const getTime = () => new Date().getTime();
 // const since = start => getTime() - start;
-const format = num => num.toLocaleString().replace(/\.\d+$/, '');
 // const _cycle = (bench, newline) => {
 //   process.stdout.write('\u001b[G');
 //   process.stdout.write(`  ${bench.target}` + (newline ? '\n' : ''));
 // };
+
+const getTime = () => new Date().getTime();
+const format = num => num.toLocaleString().replace(/\.\d+$/, '');
 
 const cycle = (name, total, avg, finished = false) => {
   const color = finished ? colors.green : colors.gray.dim;

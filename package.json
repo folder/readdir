@@ -1,13 +1,13 @@
 {
   "name": "@folder/readdir",
-  "description": "Recursively read a directory, blazing fast.",
   "version": "2.1.0",
-  "homepage": "https://github.com/@older/readdir",
+  "description": "Recursively read a directory, blazing fast.",
+  "repository": "folder/readdir",
+  "homepage": "https://github.com/folder/readdir",
   "author": "Jon Schlinkert (https://github.com/jonschlinkert)",
   "funding": {
     "url": "https://github.com/sponsors/jonschlinkert"
   },
-  "repository": "folder/readdir",
   "bugs": {
     "url": "https://github.com/folder/readdir/issues"
   },
@@ -57,7 +57,6 @@
   ],
   "verb": {
     "toc": false,
-    "badges": false,
     "layout": "default",
     "tasks": [
       "readme"
@@ -65,6 +64,12 @@
     "plugins": [
       "gulp-format-md"
     ],
+    "related": {
+      "links": [
+        "@folder/dirent",
+        "@folder/xdg"
+      ]
+    },
     "lint": {
       "reflinks": true
     }
