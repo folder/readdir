@@ -3,7 +3,7 @@
 require('mocha');
 const fs = require('fs');
 const path = require('path');
-const assert = require('assert/strict');
+const assert = require('assert').strict;
 const write = require('write');
 const rimraf = require('rimraf');
 const readdir = require('..');
