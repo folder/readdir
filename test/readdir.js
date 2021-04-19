@@ -149,6 +149,31 @@ describe('readdir', () => {
     });
   });
 
+  describe('options.dot', () => {
+    it('should exclude dot files when dot is false', async () => {
+      const expected = ['a', 'a/a', 'a/a/a', 'a/a/b', 'a/a/c', '.gitignore', '.DS_Store'];
+      cleanup = createFiles(['a/a/a', 'a/a/b', 'a/a/c', '.gitignore', '.DS_Store']);
+
+      const files1 = await readdir(temp(), { recursive: true });
+      files1.sort();
+
+      expected.forEach(pathname => assert(files1.includes(pathname), pathname));
+
+      const files2 = await readdir(temp(), { recursive: true, dot: false });
+      files2.sort();
+
+      expected.forEach(pathname => {
+        if (pathname.startsWith('.')) {
+          assert(!files2.includes(pathname), pathname);
+        } else {
+          assert(files2.includes(pathname), pathname);
+        }
+      });
+
+      cleanup();
+    });
+  });
+
   describe('options.recurse', () => {
     it('should recursively read files', () => {
       cleanup = createFiles(['a/a/a', 'a/a/b', 'a/a/c']);
