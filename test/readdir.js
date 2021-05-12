@@ -174,6 +174,75 @@ describe('readdir', () => {
     });
   });
 
+  describe('options.filter', () => {
+    const opts = { ...options, relative: true, symlinks: true, base: __dirname };
+
+    it('should filter symlinks with a function', async () => {
+      try {
+        const names = fs.readdirSync(path.join(__dirname, '..'));
+        cleanup = createSymlinks('file', names, ['foo.js', 'bar.js']);
+
+        const filter = file => !/license/i.test(file.path);
+        const files = await readdir(temp(), { ...opts, filter });
+
+        assert(files.length > 0);
+
+        // symlinks
+        assert(files.some(name => name === 'temp/README.md'));
+        assert(!files.some(name => name === 'temp/LICENSE'));
+
+        // files
+        assert(files.some(name => name === 'temp/foo.js'));
+        assert(files.some(name => name === 'temp/bar.js'));
+
+      } catch (err) {
+        return Promise.reject(err);
+      } finally {
+        cleanup();
+      }
+    });
+
+    it('should filter files with a function', () => {
+      const filter = file => /sync/.test(file.path);
+
+      return readdir(__dirname, { ...opts, filter })
+        .then(files => {
+          assert(files.includes('readdir.sync.js'));
+          assert(!files.includes('readdir.js'));
+        });
+    });
+
+    it('should filter files recursively with a function', async () => {
+      cleanup = createFiles(['c.md', 'a/a/a/a.md', 'a/a/a/c.txt', 'a/a/a/b.md', 'a/b.txt']);
+
+      const filter = file => {
+        return file.isFile() && path.extname(file.path) === '.md';
+      };
+
+      return readdir(temp(), { recursive: true, filter })
+        .then(files => {
+          cleanup();
+          assert.deepEqual(files, [ 'c.md', 'a/a/a/a.md', 'a/a/a/b.md' ]);
+        });
+    });
+
+    it('should filter files with a regex', () => {
+      return readdir(__dirname, { ...opts, filter: /sync/ })
+        .then(files => {
+          assert(files.includes('readdir.sync.js'));
+          assert(!files.includes('readdir.js'));
+        });
+    });
+
+    it('should filter files with an array', () => {
+      return readdir(__dirname, { ...opts, filter: [/sync/] })
+        .then(files => {
+          assert(files.includes('readdir.sync.js'));
+          assert(!files.includes('readdir.js'));
+        });
+    });
+  });
+
   describe('options.recurse', () => {
     it('should recursively read files', () => {
       cleanup = createFiles(['a/a/a', 'a/a/b', 'a/a/c']);
@@ -696,7 +765,7 @@ describe('readdir', () => {
         });
     });
 
- it('should keep matching files', () => {
+    it('should keep matching files', () => {
       cleanup = createFiles(['b/b/b.txt', 'a/a/a.txt', 'c/c/c.txt']);
 
       const isMatch = file => {

@@ -125,6 +125,22 @@ console.log(files);
 //=> ['LICENSE', 'README.md', 'package.json']
 ```
 
+### filter
+
+**Type**: `function|string|array|regexp`
+
+**Default**: `undefined`
+
+**Example**
+
+```js
+// only return file paths with "foo" somewhere in the path
+console.log(await readdir('some/dir', { filter: /foo/ }));
+
+// only return file paths without "foo" somewhere in the path
+console.log(await readdir('some/dir', { filter: file => !/foo/.test(file.path) }));
+```
+
 ### follow
 
 Follow symbolic links.
